@@ -6,7 +6,7 @@ Functions:
     export: Function to export the database to json to stdout.
 """
 
-from pydo.models import engine
+from pydo.model import engine
 from sqlalchemy import MetaData
 
 import alembic.config
@@ -14,7 +14,8 @@ import json
 import os
 
 
-def install(session, log):
+def install(session, log, data_directory = '~/.local/share/pydo'):
+
     '''
     Function to create the environment for pydo.
 
@@ -27,7 +28,7 @@ def install(session, log):
     '''
 
     # Create data directory
-    data_directory = os.path.expanduser('~/.local/share/pydo')
+    data_directory = os.path.expanduser(data_directory)
     if not os.path.exists(data_directory):
         os.makedirs(data_directory)
         log.info('Data directory created')

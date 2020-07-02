@@ -1,12 +1,12 @@
 from faker import Faker
 from pydo import config
-from pydo.models import RecurrentTask, Task
-from pydo.reports import TaskReport, Projects, Tags
-from tests.factories import \
-    ProjectFactory, \
-    RecurrentTaskFactory, \
-    TagFactory, \
-    TaskFactory
+# from pydo.model import RecurrentTask, Task
+# from pydo.reports import TaskReport, Projects, Tags
+# from tests.factories import \
+#     ProjectFactory, \
+#     RecurrentTaskFactory, \
+#     TagFactory, \
+#     TaskFactory
 from unittest.mock import patch
 
 import pytest

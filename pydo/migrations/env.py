@@ -23,8 +23,8 @@ import sys
 
 sys.path = ['', '..'] + sys.path[1:]
 
-from pydo import models
-target_metadata = models.Base.metadata
+from pydo import model
+target_metadata = model.Base.metadata
 # target_metadata = None
 
 # other values from the config, defined by the needs of env.py,

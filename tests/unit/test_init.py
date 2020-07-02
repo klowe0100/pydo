@@ -1,6 +1,6 @@
 from faker import Faker
 from pydo import config, main
-from pydo import models
+from pydo import model
 from unittest.mock import call, patch
 
 import pytest
@@ -11,7 +11,7 @@ class TestMain:
 
     @pytest.fixture(autouse=True)
     def setup(self, session):
-        self.engine_patch = patch('pydo.models.engine', autospect=True)
+        self.engine_patch = patch('pydo.model.engine', autospect=True)
         self.engine = self.engine_patch.start()
 
         self.fake = Faker()
@@ -241,7 +241,7 @@ class TestMain:
 
         main()
 
-        assert call(models.Task) in mock.mock_calls
+        assert call(model.Task) in mock.mock_calls
         assert call(state='open', type='task') \
             in mock.return_value.filter_by.mock_calls
 
@@ -405,13 +405,13 @@ class TestMain:
 
         main()
 
-        assert call(models.RecurrentTask) in mock.mock_calls
+        assert call(model.RecurrentTask) in mock.mock_calls
         assert call(state='open', recurrence_type='repeating') \
             in mock.return_value.filter_by.mock_calls
 
         self.task_report.assert_called_once_with(
             self.session,
-            models.RecurrentTask
+            model.RecurrentTask
         )
         self.task_report.return_value.print.assert_called_once_with(
             tasks=mock.return_value.filter_by.return_value,
@@ -425,13 +425,13 @@ class TestMain:
 
         main()
 
-        assert call(models.RecurrentTask) in mock.mock_calls
+        assert call(model.RecurrentTask) in mock.mock_calls
         assert call(state='open', recurrence_type='recurring') \
             in mock.return_value.filter_by.mock_calls
 
         self.task_report.assert_called_once_with(
             self.session,
-            models.RecurrentTask
+            model.RecurrentTask
         )
         self.task_report.return_value.print.assert_called_once_with(
             tasks=mock.return_value.filter_by.return_value,
@@ -445,12 +445,12 @@ class TestMain:
 
         main()
 
-        assert call(models.Task) in mock.mock_calls
+        assert call(model.Task) in mock.mock_calls
         assert call(state='frozen') in mock.return_value.filter_by.mock_calls
 
         self.task_report.assert_called_once_with(
             self.session,
-            models.RecurrentTask
+            model.RecurrentTask
         )
         self.task_report.return_value.print.assert_called_once_with(
             tasks=mock.return_value.filter_by.return_value,

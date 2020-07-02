@@ -8,7 +8,7 @@ Classes:
 
 from pydo import config
 from pydo.fulids import fulid
-from pydo.models import Task, Project, Tag
+from pydo.model import Task, Project, Tag
 from tabulate import tabulate
 
 

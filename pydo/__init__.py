@@ -23,11 +23,11 @@ import os
 from pydo.configuration import Config
 config = Config(os.getenv('PYDO_CONFIG', '~/.local/share/pydo/config.yaml'))
 
-from pydo import models
-from pydo.manager import TaskManager
-from pydo.ops import export, install
-from pydo.reports import TaskReport, Projects, Tags
-from sqlalchemy.orm import sessionmaker
+from pydo import model
+# from pydo.manager import TaskManager
+# from pydo.ops import export, install
+# from pydo.reports import TaskReport, Projects, Tags
+# from sqlalchemy.orm import sessionmaker
 
 import logging
 
@@ -76,7 +76,7 @@ def main(argv=sys.argv[1:]):
     parser = load_parser()
     args = parser.parse_args(argv)
 
-    connection = models.engine.connect()
+    connection = model.engine.connect()
     session = sessionmaker()(bind=connection)
 
     if args.subcommand == 'install':
@@ -91,7 +91,7 @@ def main(argv=sys.argv[1:]):
     ]:
         task_modify_commands(session, args)
     elif args.subcommand in ['open', None]:
-        open_tasks = session.query(models.Task).filter_by(
+        open_tasks = session.query(model.Task).filter_by(
             state='open',
             type='task',
         )
@@ -101,18 +101,18 @@ def main(argv=sys.argv[1:]):
             labels=config.get('report.open.labels'),
         )
     elif args.subcommand in ['repeating', 'recurring']:
-        open_recurring_tasks = session.query(models.RecurrentTask).filter_by(
+        open_recurring_tasks = session.query(model.RecurrentTask).filter_by(
             state='open',
             recurrence_type=args.subcommand,
         )
-        TaskReport(session, models.RecurrentTask).print(
+        TaskReport(session, model.RecurrentTask).print(
             tasks=open_recurring_tasks,
             columns=config.get('report.{}.columns'.format(args.subcommand)),
             labels=config.get('report.{}.labels'.format(args.subcommand)),
         )
     elif args.subcommand == 'frozen':
-        TaskReport(session, models.RecurrentTask).print(
-            tasks=session.query(models.Task).filter_by(
+        TaskReport(session, model.RecurrentTask).print(
+            tasks=session.query(model.Task).filter_by(
                 state='frozen',
             ),
             columns=config.get('report.frozen.columns'),

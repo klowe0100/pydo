@@ -7,7 +7,7 @@ Classes:
 from dateutil.relativedelta import relativedelta, MO, TU, WE, TH, FR, SA, SU
 from pydo import config
 from pydo.fulids import fulid
-from pydo.models import Task, Project, Tag, RecurrentTask
+from pydo.model import Task, Project, Tag, RecurrentTask
 
 import datetime
 import logging

@@ -1,4 +1,4 @@
-from pydo import models
+from pydo import model
 from tests import factories
 
 import pytest
@@ -33,7 +33,7 @@ class TestTask(BaseModelTest):
     @pytest.fixture(autouse=True)
     def setup(self, session):
         self.dummy_instance = factories.TaskFactory.create()
-        self.model = models.Task(
+        self.model = model.Task(
             id=self.dummy_instance.id,
             agile=self.dummy_instance.agile,
             title=self.dummy_instance.title,
@@ -64,7 +64,7 @@ class TestRecurrentTask(BaseModelTest):
     @pytest.fixture(autouse=True)
     def setup(self, session):
         self.dummy_instance = factories.RecurrentTaskFactory.create()
-        self.model = models.RecurrentTask(
+        self.model = model.RecurrentTask(
             id=self.dummy_instance.id,
             agile=self.dummy_instance.agile,
             title=self.dummy_instance.title,
@@ -98,7 +98,7 @@ class TestProject(BaseModelTest):
     @pytest.fixture(autouse=True)
     def setup(self, session):
         self.dummy_instance = factories.ProjectFactory.create()
-        self.model = models.Project(
+        self.model = model.Project(
             id=self.dummy_instance.id,
             description=self.dummy_instance.description,
         )

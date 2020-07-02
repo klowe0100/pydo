@@ -1,14 +1,12 @@
 from pydo import config
 from pydo.fulids import fulid
-from pydo import models
+from pydo import model
 
 import factory
 import random
 
-# XXX If you add new Factories remember to add the session in conftest.py
 
-
-class ProjectFactory(factory.alchemy.SQLAlchemyModelFactory):
+class ProjectFactory(factory.Factory):
     """
     Class to generate a fake project.
     """
@@ -16,13 +14,12 @@ class ProjectFactory(factory.alchemy.SQLAlchemyModelFactory):
     description = factory.Faker('sentence')
 
     class Meta:
-        model = models.Project
-        sqlalchemy_session_persistence = 'commit'
+        model = model.Project
 
 
-class TaskFactory(factory.alchemy.SQLAlchemyModelFactory):
+class TaskFactory(factory.Factory):
     id = factory.LazyFunction(lambda: fulid().new().str)
-    title = factory.Faker('sentence')
+    description = factory.Faker('sentence')
     state = factory.Faker(
         'word',
         ext_word_list=config.get('task.allowed_states')
@@ -44,27 +41,26 @@ class TaskFactory(factory.alchemy.SQLAlchemyModelFactory):
             return factory.Faker('date_time').generate({})
 
     class Meta:
-        model = models.Task
-        sqlalchemy_session_persistence = 'commit'
+        model = model.Task
 
 
-class RecurrentTaskFactory(TaskFactory):
-    recurrence = factory.Faker(
-        'word',
-        ext_word_list=['1d', '1rmo', '1y2mo30s']
-    )
-    recurrence_type = factory.Faker(
-        'word',
-        ext_word_list=['repeating', 'recurring']
-    )
-    type = 'recurrent_task'
+# class RecurrentTaskFactory(TaskFactory):
+#     recurrence = factory.Faker(
+#         'word',
+#         ext_word_list=['1d', '1rmo', '1y2mo30s']
+#     )
+#     recurrence_type = factory.Faker(
+#         'word',
+#         ext_word_list=['repeating', 'recurring']
+#     )
+#     type = 'recurrent_task'
+#
+#     class Meta:
+#         model = model.RecurrentTask
+#         sqlalchemy_session_persistence = 'commit'
 
-    class Meta:
-        model = models.RecurrentTask
-        sqlalchemy_session_persistence = 'commit'
 
-
-class TagFactory(factory.alchemy.SQLAlchemyModelFactory):
+class TagFactory(factory.Factory):
     """
     Class to generate a fake tag.
     """
@@ -72,5 +68,4 @@ class TagFactory(factory.alchemy.SQLAlchemyModelFactory):
     description = factory.Faker('sentence')
 
     class Meta:
-        model = models.Tag
-        sqlalchemy_session_persistence = 'commit'
+        model = model.Tag
