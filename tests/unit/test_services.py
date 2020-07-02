@@ -4,7 +4,6 @@ from typing import List, Optional
 
 
 class FakeRepository(repository.AbstractRepository):
-
     def __init__(
         self,
         projects: Optional[List[model.Project]] = None,

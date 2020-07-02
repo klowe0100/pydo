@@ -1,5 +1,6 @@
 [![Actions
 Status](https://github.com/lyz-code/pydo/workflows/Python%20package/badge.svg)](https://github.com/lyz-code/pydo/actions)
+[![Coverage Status](https://coveralls.io/repos/github/lyz-code/pydo/badge.svg?branch=master)](https://coveralls.io/github/lyz-code/pydo?branch=master)
 
 # Pydo
 

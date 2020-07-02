@@ -23,8 +23,9 @@ import sys
 
 sys.path = ['', '..'] + sys.path[1:]
 
-from pydo import model
-target_metadata = model.Base.metadata
+from pydo.adapters.orm import metadata
+
+target_metadata = metadata
 # target_metadata = None
 
 # other values from the config, defined by the needs of env.py,

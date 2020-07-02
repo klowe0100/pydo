@@ -31,14 +31,14 @@ class PostEggInfoCommand(egg_info):
         except FileExistsError:
             log.info("Data directory already exits")
 
-        config_path = os.path.join(data_directory, 'config.yaml')
+        config_path = os.path.join(data_directory, "config.yaml")
         if os.path.isfile(config_path) and os.access(config_path, os.R_OK):
             log.info(
                 "Configuration file already exists, check the documentation "
                 "for the new version changes."
             )
         else:
-            shutil.copyfile('assets/config.yaml', config_path)
+            shutil.copyfile("assets/config.yaml", config_path)
             log.info("Copied default configuration template")
         import pydo
 
@@ -58,10 +58,7 @@ setup(
     packages=find_packages(exclude=("tests",)),
     package_data={"pydo": ["migrations/*", "migrations/versions/*"]},
     entry_points={"console_scripts": ["pydo = pydo:main"]},
-    cmdclass={
-        "install": PostInstallCommand,
-        "egg_info": PostEggInfoCommand,
-    },
+    cmdclass={"install": PostInstallCommand, "egg_info": PostEggInfoCommand},
     setup_requires=[
         "alembic>=1.3.1",
         "argcomplete>=1.11.1",
