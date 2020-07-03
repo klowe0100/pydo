@@ -55,19 +55,13 @@ class TableManager:
             setattr(obj, attribute_key, attribute_value)
 
         try:
-            title = object_values['title']
+            title = object_values["title"]
         except KeyError:
             title = None
 
         self.session.add(obj)
         self.session.commit()
-        log.debug(
-            'Added {} {}: {}'.format(
-                self.model.__name__.lower(),
-                id,
-                title,
-            )
-        )
+        log.debug("Added {} {}: {}".format(self.model.__name__.lower(), id, title,))
 
     def _get(self, id):
         """
@@ -84,7 +78,7 @@ class TableManager:
         table_element = self.session.query(self.model).get(id)
 
         if table_element is None:
-            raise ValueError('The element {} does not exist'.format(id))
+            raise ValueError("The element {} does not exist".format(id))
         else:
             return table_element
 
@@ -117,19 +111,14 @@ class TableManager:
         table_element = self.session.query(self.model).get(id)
 
         if table_element is None:
-            raise ValueError('The element {} does not exist'.format(id))
+            raise ValueError("The element {} does not exist".format(id))
         else:
             if object_values is not None:
                 for attribute_key, attribute_value in object_values.items():
                     setattr(table_element, attribute_key, attribute_value)
 
             self.session.commit()
-            log.debug(
-                'Modified {}: {}'.format(
-                    id,
-                    object_values,
-                )
-            )
+            log.debug("Modified {}: {}".format(id, object_values,))
 
 
 class TaskManager(TableManager):
@@ -185,8 +174,7 @@ class TaskManager(TableManager):
         super().__init__(session, Task)
         self.date = DateManager()
         self.fulid = fulid(
-            config.get('fulid.characters'),
-            config.get('fulid.forbidden_characters'),
+            config.get("fulid.characters"), config.get("fulid.forbidden_characters"),
         )
         self.recurrence = TableManager(session, RecurrentTask)
 
@@ -203,79 +191,41 @@ class TaskManager(TableManager):
         """
 
         attribute_conf = {
-            'agile': {
-                'regexp': r'^(ag|agile):',
-                'type': 'str',
-            },
-            'body': {
-                'regexp': r'^body:',
-                'type': 'str',
-            },
-            'due': {
-                'regexp': r'^due:',
-                'type': 'date',
-            },
-            'estimate': {
-                'regexp': r'^(est|estimate):',
-                'type': 'float',
-            },
-            'fun': {
-                'regexp': r'^fun:',
-                'type': 'int',
-            },
-            'priority': {
-                'regexp': r'^(pri|priority):',
-                'type': 'int',
-            },
-            'project_id': {
-                'regexp': r'^(pro|project):',
-                'type': 'str',
-            },
-            'recurring': {
-                'regexp': r'^(rec|recurring):',
-                'type': 'str',
-            },
-            'repeating': {
-                'regexp': r'^(rep|repeating):',
-                'type': 'str',
-            },
-            'tags': {
-                'regexp': r'^\+',
-                'type': 'tag',
-            },
-            'tags_rm': {
-                'regexp': r'^\-',
-                'type': 'tag',
-            },
-            'value': {
-                'regexp': r'^(vl|value):',
-                'type': 'int',
-            },
-            'willpower': {
-                'regexp': r'^(wp|willpower):',
-                'type': 'int',
-            },
+            "agile": {"regexp": r"^(ag|agile):", "type": "str",},
+            "body": {"regexp": r"^body:", "type": "str",},
+            "due": {"regexp": r"^due:", "type": "date",},
+            "estimate": {"regexp": r"^(est|estimate):", "type": "float",},
+            "fun": {"regexp": r"^fun:", "type": "int",},
+            "priority": {"regexp": r"^(pri|priority):", "type": "int",},
+            "project_id": {"regexp": r"^(pro|project):", "type": "str",},
+            "recurring": {"regexp": r"^(rec|recurring):", "type": "str",},
+            "repeating": {"regexp": r"^(rep|repeating):", "type": "str",},
+            "tags": {"regexp": r"^\+", "type": "tag",},
+            "tags_rm": {"regexp": r"^\-", "type": "tag",},
+            "value": {"regexp": r"^(vl|value):", "type": "int",},
+            "willpower": {"regexp": r"^(wp|willpower):", "type": "int",},
         }
 
         for attribute_id, attribute in attribute_conf.items():
-            if re.match(attribute['regexp'], add_argument):
-                if attribute['type'] == 'tag':
+            if re.match(attribute["regexp"], add_argument):
+                if attribute["type"] == "tag":
                     if len(add_argument) < 2:
                         raise ValueError("Empty tag value")
-                    return attribute_id, re.sub(r'^[+-]', '', add_argument)
-                elif add_argument.split(':')[1] == '':
-                    return attribute_id, ''
-                elif attribute['type'] == 'str':
-                    return attribute_id, add_argument.split(':')[1]
-                elif attribute['type'] == 'int':
-                    return attribute_id, int(add_argument.split(':')[1])
-                elif attribute['type'] == 'float':
-                    return attribute_id, float(add_argument.split(':')[1])
-                elif attribute['type'] == 'date':
-                    return attribute_id, self.date.convert(
-                        ":".join(add_argument.split(':')[1:])
+                    return attribute_id, re.sub(r"^[+-]", "", add_argument)
+                elif add_argument.split(":")[1] == "":
+                    return attribute_id, ""
+                elif attribute["type"] == "str":
+                    return attribute_id, add_argument.split(":")[1]
+                elif attribute["type"] == "int":
+                    return attribute_id, int(add_argument.split(":")[1])
+                elif attribute["type"] == "float":
+                    return attribute_id, float(add_argument.split(":")[1])
+                elif attribute["type"] == "date":
+                    return (
+                        attribute_id,
+                        self.date.convert(":".join(add_argument.split(":")[1:])),
                     )
-        return 'title', add_argument
+        return "title", add_argument
 
     def _parse_arguments(self, add_arguments):
         """
@@ -292,26 +242,26 @@ class TaskManager(TableManager):
 
         for argument in add_arguments:
             attribute_id, attribute_value = self._parse_attribute(argument)
-            if attribute_id in ['tags', 'tags_rm', 'title']:
+            if attribute_id in ["tags", "tags_rm", "title"]:
                 try:
                     attributes[attribute_id]
                 except KeyError:
                     attributes[attribute_id] = []
                 attributes[attribute_id].append(attribute_value)
-            elif attribute_id in ['recurring', 'repeating']:
-                attributes['recurrence'] = attribute_value
-                attributes['recurrence_type'] = attribute_id
+            elif attribute_id in ["recurring", "repeating"]:
+                attributes["recurrence"] = attribute_value
+                attributes["recurrence_type"] = attribute_id
             else:
                 attributes[attribute_id] = attribute_value
 
         try:
-            attributes['title'] = ' '.join(attributes['title'])
+            attributes["title"] = " ".join(attributes["title"])
         except KeyError:
             pass
 
         return attributes
 
-    def _get_fulid(self, id, state='open'):
+    def _get_fulid(self, id, state="open"):
         """
         Method to get the task's fulid if necessary.
 
@@ -329,12 +279,7 @@ class TaskManager(TableManager):
             try:
                 fulid = self.fulid.sulid_to_fulid(id, task_fulids)
             except KeyError:
-                log.error(
-                    'There is no {} task with fulid {}'.format(
-                        state,
-                        fulid,
-                    )
-                )
+                log.error("There is no {} task with fulid {}".format(state, fulid,))
 
         return fulid
 
@@ -350,11 +295,11 @@ class TaskManager(TableManager):
         """
 
         child_attributes = self._get_attributes(parent_task)
-        child_attributes.pop('recurrence')
-        child_attributes.pop('recurrence_type')
-        child_attributes['id'] = self._create_next_fulid().str
-        child_attributes['parent_id'] = parent_task.id
-        child_attributes['type'] = 'task'
+        child_attributes.pop("recurrence")
+        child_attributes.pop("recurrence_type")
+        child_attributes["id"] = self._create_next_fulid().str
+        child_attributes["parent_id"] = parent_task.id
+        child_attributes["type"] = "task"
 
         return child_attributes
 
@@ -366,9 +311,12 @@ class TaskManager(TableManager):
             fulid (str): next fulid.
         """
 
-        last_fulid = self.session.query(
-            Task
-        ).filter_by(state='open').order_by(Task.id.desc()).first()
+        last_fulid = (
+            self.session.query(Task)
+            .filter_by(state="open")
+            .order_by(Task.id.desc())
+            .first()
+        )
 
         if last_fulid is not None:
             last_fulid = last_fulid.id
@@ -388,10 +336,10 @@ class TaskManager(TableManager):
         if project_id is not None:
             project = self.session.query(Project).get(project_id)
             if project is None:
-                project = Project(id=project_id, description='')
+                project = Project(id=project_id, description="")
                 self.session.add(project)
                 self.session.commit()
-            task_attributes['project'] = project
+            task_attributes["project"] = project
 
     def _set_tags(self, task_attributes, tags=[]):
         """
@@ -405,16 +353,16 @@ class TaskManager(TableManager):
         """
         commit_necessary = False
 
-        if 'tags' not in task_attributes:
-            task_attributes['tags'] = []
+        if "tags" not in task_attributes:
+            task_attributes["tags"] = []
 
         for tag_id in tags:
             tag = self.session.query(Tag).get(tag_id)
             if tag is None:
-                tag = Tag(id=tag_id, description='')
+                tag = Tag(id=tag_id, description="")
                 self.session.add(tag)
                 commit_necessary = True
-            task_attributes['tags'].append(tag)
+            task_attributes["tags"].append(tag)
 
         if commit_necessary:
             self.session.commit()
@@ -431,7 +379,7 @@ class TaskManager(TableManager):
             tag = self.session.query(Tag).get(tag_id)
             if tag is None:
                 raise ValueError("The tag doesn't exist")
-            task_attributes['tags'].remove(tag)
+            task_attributes["tags"].remove(tag)
 
     def _set_agile(self, task_attributes, agile=None):
         """
@@ -444,25 +392,16 @@ class TaskManager(TableManager):
             task_attributes (dict): Dictionary with the attributes of the task.
             agile (str): Task agile state.
         """
-        if agile is not None and \
-                agile not in config.get('task.agile.allowed_states'):
+        if agile is not None and agile not in config.get("task.agile.allowed_states"):
             raise ValueError(
-                'Agile state {} is not between the specified '
-                'by task.agile.states'.format(agile)
+                "Agile state {} is not between the specified "
+                "by task.agile.states".format(agile)
             )
 
         if agile is not None:
-            task_attributes['agile'] = agile
+            task_attributes["agile"] = agile
 
-    def _set(
-        self,
-        id=None,
-        project_id=None,
-        tags=[],
-        tags_rm=[],
-        agile=None,
-        **kwargs
-    ):
+    def _set(self, id=None, project_id=None, tags=[], tags_rm=[], agile=None, **kwargs):
         """
         Method to set the task's attributes and get its fulid.
 
@@ -481,8 +420,8 @@ class TaskManager(TableManager):
         fulid = None
         task_attributes = {}
 
-        if project_id == '':
-            task_attributes['project'] = None
+        if project_id == "":
+            task_attributes["project"] = None
         else:
             self._set_project(task_attributes, project_id)
 
@@ -490,32 +429,25 @@ class TaskManager(TableManager):
             fulid = self._get_fulid(id)
 
             task = self.session.query(Task).get(fulid)
-            task_attributes['tags'] = task.tags
+            task_attributes["tags"] = task.tags
 
             self._rm_tags(task_attributes, tags_rm)
 
         self._set_tags(task_attributes, tags)
 
-        if agile == '':
-            task_attributes['agile'] = None
+        if agile == "":
+            task_attributes["agile"] = None
         else:
             self._set_agile(task_attributes, agile)
 
         for key, value in kwargs.items():
-            if value == '':
+            if value == "":
                 value = None
             task_attributes[key] = value
 
         return fulid, task_attributes
 
-    def add(
-        self,
-        title,
-        project_id=None,
-        tags=[],
-        agile=None,
-        **kwargs
-    ):
+    def add(self, title, project_id=None, tags=[], agile=None, **kwargs):
         """
         Use parent method to create a new task.
 
@@ -532,41 +464,31 @@ class TaskManager(TableManager):
             tags=tags,
             agile=agile,
             title=title,
-            state='open',
+            state="open",
             **kwargs,
         )
 
-        if 'recurrence' in task_attributes:
-            if task_attributes['due'] is None:
+        if "recurrence" in task_attributes:
+            if task_attributes["due"] is None:
                 log.error(
-                    'You need to specify a due date for {} tasks'.format(
-                        task_attributes['recurrence_type']
+                    "You need to specify a due date for {} tasks".format(
+                        task_attributes["recurrence_type"]
                     )
                 )
             parent_id = self._create_next_fulid().str
             self.recurrence._add(
-                parent_id,
-                task_attributes,
+                parent_id, task_attributes,
             )
 
-            task_attributes.pop('recurrence')
-            task_attributes.pop('recurrence_type')
-            task_attributes['parent_id'] = parent_id
+            task_attributes.pop("recurrence")
+            task_attributes.pop("recurrence_type")
+            task_attributes["parent_id"] = parent_id
 
         self._add(
-            self._create_next_fulid().str,
-            task_attributes,
+            self._create_next_fulid().str, task_attributes,
         )
 
-    def modify(
-        self,
-        id,
-        project_id=None,
-        tags=[],
-        tags_rm=[],
-        agile=None,
-        **kwargs
-    ):
+    def modify(self, id, project_id=None, tags=[], tags_rm=[], agile=None, **kwargs):
         """
         Use parent method to modify an existing task.
 
@@ -578,17 +500,11 @@ class TaskManager(TableManager):
             **kwargs: (object) Other attributes (key: value).
         """
         fulid, task_attributes = self._set(
-            id,
-            project_id,
-            tags,
-            tags_rm,
-            agile,
-            **kwargs
+            id, project_id, tags, tags_rm, agile, **kwargs
         )
 
         self._update(
-            fulid,
-            task_attributes,
+            fulid, task_attributes,
         )
 
     def modify_parent(self, id, **kwargs):
@@ -604,9 +520,7 @@ class TaskManager(TableManager):
         child_task = self.session.query(Task).get(fulid)
 
         if child_task.parent_id is None:
-            log.error(
-                "Task {} doesn't have a parent task".format(child_task.id)
-            )
+            log.error("Task {} doesn't have a parent task".format(child_task.id))
         else:
             self.modify(child_task.parent_id, **kwargs)
 
@@ -623,7 +537,7 @@ class TaskManager(TableManager):
         try:
             id = self._get_fulid(id)
         except KeyError:
-            log.error('There is no task with that id')
+            log.error("There is no task with that id")
             return
 
         task = self.session.query(Task).get(id)
@@ -633,22 +547,14 @@ class TaskManager(TableManager):
 
         if parent:
             if task.parent_id is None:
-                log.error(
-                    "Task {} doesn't have a parent task".format(task.id)
-                )
+                log.error("Task {} doesn't have a parent task".format(task.id))
             else:
                 self._close(task.parent_id, state=state, parent=False)
         elif task.parent_id is not None:
             self._close_children_hook(task)
 
         self.session.commit()
-        log.debug(
-            '{} task {}: {}'.format(
-                state.title(),
-                task.id,
-                task.title
-            )
-        )
+        log.debug("{} task {}: {}".format(state.title(), task.id, task.title))
 
     def _close_children_hook(self, task):
         """
@@ -658,10 +564,10 @@ class TaskManager(TableManager):
         Arguments:
             task (Task): Children closed task
         """
-        if task.parent.state != 'frozen':
-            if task.parent.recurrence_type == 'recurring':
+        if task.parent.state != "frozen":
+            if task.parent.recurrence_type == "recurring":
                 self._spawn_next_recurring(task.parent)
-            elif task.parent.recurrence_type == 'repeating':
+            elif task.parent.recurrence_type == "repeating":
                 self._spawn_next_repeating(task.parent)
 
     def _spawn_next_recurring(self, parent_task):
@@ -683,17 +589,16 @@ class TaskManager(TableManager):
                 break
             last_due = next_due
 
-        child_attributes['due'] = next_due
+        child_attributes["due"] = next_due
         self._add(
-            child_attributes['id'],
-            child_attributes,
+            child_attributes["id"], child_attributes,
         )
 
         # Assign parent. It seems that specifying it in the child_attributes
         # is not enough.
 
-        child_task = self.session.query(Task).get(child_attributes['id'])
-        child_task.parent_id = child_attributes['parent_id']
+        child_task = self.session.query(Task).get(child_attributes["id"])
+        child_task.parent_id = child_attributes["parent_id"]
 
     def _spawn_next_repeating(self, parent_task):
         """
@@ -705,20 +610,16 @@ class TaskManager(TableManager):
         now = datetime.datetime.now()
 
         child_attributes = self._generate_children_attributes(parent_task)
-        child_attributes['due'] = self.date.convert(
-            parent_task.recurrence,
-            now,
-        )
+        child_attributes["due"] = self.date.convert(parent_task.recurrence, now,)
         self._add(
-            child_attributes['id'],
-            child_attributes,
+            child_attributes["id"], child_attributes,
         )
 
         # Assign parent. It seems that specifying it in the child_attributes
         # is not enough.
 
-        child_task = self.session.query(Task).get(child_attributes['id'])
-        child_task.parent_id = child_attributes['parent_id']
+        child_task = self.session.query(Task).get(child_attributes["id"])
+        child_task.parent_id = child_attributes["parent_id"]
 
     def delete(self, id, parent=False):
         """
@@ -729,7 +630,7 @@ class TaskManager(TableManager):
             parent (bool): Also delete parent task (False by default)
         """
 
-        self._close(id, 'deleted', parent)
+        self._close(id, "deleted", parent)
 
     def complete(self, id, parent=False):
         """
@@ -740,7 +641,7 @@ class TaskManager(TableManager):
             parent (bool): Also delete parent task (False by default)
         """
 
-        self._close(id, 'completed', parent)
+        self._close(id, "completed", parent)
 
     def freeze(self, id, parent=False):
         """
@@ -755,9 +656,9 @@ class TaskManager(TableManager):
         task = self.session.query(Task).get(fulid)
 
         if parent and task.parent is not None:
-            task.parent.state = 'frozen'
+            task.parent.state = "frozen"
         else:
-            task.state = 'frozen'
+            task.state = "frozen"
         self.session.commit()
 
     def unfreeze(self, id, parent=False):
@@ -769,16 +670,16 @@ class TaskManager(TableManager):
             parent (bool): Unfreeze the parent task instead(False by default).
         """
 
-        fulid = self._get_fulid(id, 'frozen')
+        fulid = self._get_fulid(id, "frozen")
         task = self.session.query(Task).get(fulid)
         if parent and task.parent is not None:
-            task.parent.state = 'open'
+            task.parent.state = "open"
         else:
-            task.state = 'open'
+            task.state = "open"
 
         self.session.commit()
 
-        if task.type != 'task':
+        if task.type != "task":
             self._unfreeze_parent_hook(task)
 
     def _unfreeze_parent_hook(self, task):
@@ -791,10 +692,10 @@ class TaskManager(TableManager):
 
         children_states = [children.state for children in task.children]
 
-        if 'open' not in children_states:
-            if task.recurrence_type == 'recurring':
+        if "open" not in children_states:
+            if task.recurrence_type == "recurring":
                 self._spawn_next_recurring(task)
-            elif task.recurrence_type == 'repeating':
+            elif task.recurrence_type == "repeating":
                 self._spawn_next_repeating(task)
 
 
@@ -832,18 +733,15 @@ class DateManager:
         if date is not None:
             return date
 
-        if re.match(
-            r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}',
-            human_date,
-        ):
-            return datetime.datetime.strptime(human_date, '%Y-%m-%dT%H:%M')
-        elif re.match(r'[0-9]{4}.[0-9]{2}.[0-9]{2}', human_date,):
-            return datetime.datetime.strptime(human_date, '%Y-%m-%d')
-        elif re.match(r'(now|today)', human_date):
+        if re.match(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}", human_date,):
+            return datetime.datetime.strptime(human_date, "%Y-%m-%dT%H:%M")
+        elif re.match(r"[0-9]{4}.[0-9]{2}.[0-9]{2}", human_date,):
+            return datetime.datetime.strptime(human_date, "%Y-%m-%d")
+        elif re.match(r"(now|today)", human_date):
             return starting_date
-        elif re.match(r'tomorrow', human_date):
+        elif re.match(r"tomorrow", human_date):
             return starting_date + relativedelta(days=1)
-        elif re.match(r'yesterday', human_date):
+        elif re.match(r"yesterday", human_date):
             return starting_date + relativedelta(days=-1)
         else:
             return self._str2date(human_date, starting_date)
@@ -860,19 +758,19 @@ class DateManager:
             date (datetime)
         """
 
-        if re.match(r'mon.*', human_date):
+        if re.match(r"mon.*", human_date):
             return self._next_weekday(0, starting_date)
-        elif re.match(r'tue.*', human_date):
+        elif re.match(r"tue.*", human_date):
             return self._next_weekday(1, starting_date)
-        elif re.match(r'wed.*', human_date):
+        elif re.match(r"wed.*", human_date):
             return self._next_weekday(2, starting_date)
-        elif re.match(r'thu.*', human_date):
+        elif re.match(r"thu.*", human_date):
             return self._next_weekday(3, starting_date)
-        elif re.match(r'fri.*', human_date):
+        elif re.match(r"fri.*", human_date):
             return self._next_weekday(4, starting_date)
-        elif re.match(r'sat.*', human_date):
+        elif re.match(r"sat.*", human_date):
             return self._next_weekday(5, starting_date)
-        elif re.match(r'sun.*', human_date):
+        elif re.match(r"sun.*", human_date):
             return self._next_weekday(6, starting_date)
         else:
             return None
@@ -900,28 +798,27 @@ class DateManager:
         """
 
         date_delta = relativedelta()
-        for element in modifier.split(' '):
-            element = re.match(r'(?P<value>[0-9]+)(?P<unit>.*)', element)
-            value = int(element.group('value'))
-            unit = element.group('unit')
+        for element in modifier.split(" "):
+            element = re.match(r"(?P<value>[0-9]+)(?P<unit>.*)", element)
+            value = int(element.group("value"))
+            unit = element.group("unit")
 
-            if unit == 's':
+            if unit == "s":
                 date_delta += relativedelta(seconds=value)
-            elif unit == 'm':
+            elif unit == "m":
                 date_delta += relativedelta(minutes=value)
-            elif unit == 'h':
+            elif unit == "h":
                 date_delta += relativedelta(hours=value)
-            elif unit == 'd':
+            elif unit == "d":
                 date_delta += relativedelta(days=value)
-            elif unit == 'mo':
+            elif unit == "mo":
                 date_delta += relativedelta(months=value)
-            elif unit == 'w':
+            elif unit == "w":
                 date_delta += relativedelta(weeks=value)
-            elif unit == 'y':
+            elif unit == "y":
                 date_delta += relativedelta(years=value)
-            elif unit == 'rmo':
-                date_delta += self._next_monthday(value, starting_date) - \
-                    starting_date
+            elif unit == "rmo":
+                date_delta += self._next_monthday(value, starting_date) - starting_date
         return starting_date + date_delta
 
     def _next_weekday(self, weekday, starting_date=datetime.datetime.now()):
@@ -960,15 +857,10 @@ class DateManager:
         """
         weekday = self._weekday(starting_date.weekday())
 
-        first_month_weekday = starting_date - \
-            relativedelta(day=1, weekday=weekday(1))
+        first_month_weekday = starting_date - relativedelta(day=1, weekday=weekday(1))
         month_weekday = (starting_date - first_month_weekday).days // 7 + 1
 
-        date_delta = relativedelta(
-            months=months,
-            day=1,
-            weekday=weekday(month_weekday)
-        )
+        date_delta = relativedelta(months=months, day=1, weekday=weekday(month_weekday))
         return starting_date + date_delta
 
     def _weekday(self, weekday):

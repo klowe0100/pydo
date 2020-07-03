@@ -12,7 +12,7 @@ from pydo.model import Task, Project, Tag
 from tabulate import tabulate
 
 
-class BaseReport():
+class BaseReport:
     """
     Abstract class to gather common report methods and attributes.
 
@@ -41,7 +41,7 @@ class BaseReport():
             str: converted date string.
         """
         try:
-            return date.strftime(config.get('report.date_format'))
+            return date.strftime(config.get("report.date_format"))
         except AttributeError:
             return None
 
@@ -80,22 +80,19 @@ class TaskReport(BaseReport):
             remove_attribute = False
             try:
                 # All tasks with attribute == None
-                if tasks.filter(
-                    getattr(self.model, attribute).is_(None)
-                ).count() == tasks.count():
+                if (
+                    tasks.filter(getattr(self.model, attribute).is_(None)).count()
+                    == tasks.count()
+                ):
                     remove_attribute = True
             except NotImplementedError:
                 # Task with empty relationship
-                if tasks.filter(
-                    getattr(self.model, attribute).any()
-                ).count() == 0:
+                if tasks.filter(getattr(self.model, attribute).any()).count() == 0:
                     remove_attribute = True
             except AttributeError:
                 # Task without attribute
                 try:
-                    if tasks.filter(
-                        getattr(self.model, attribute).any()
-                    ).count() == 0:
+                    if tasks.filter(getattr(self.model, attribute).any()).count() == 0:
                         remove_attribute = True
                 except AttributeError:
                     # There are no task with that attribute
@@ -121,36 +118,29 @@ class TaskReport(BaseReport):
 
         # Transform the fulids into sulids
         sulids = fulid(
-            config.get('fulid.characters'),
-            config.get('fulid.forbidden_characters'),
+            config.get("fulid.characters"), config.get("fulid.forbidden_characters"),
         ).sulids([task.id for task in tasks.all()])
 
-        for task in sorted(
-            tasks.all(),
-            key=lambda k: k.id,
-            reverse=True
-        ):
+        for task in sorted(tasks.all(), key=lambda k: k.id, reverse=True):
             task_report = []
             for attribute in columns:
-                if attribute == 'id':
+                if attribute == "id":
                     task.sulid = sulids[task.id]
                     task_report.append(task.sulid)
-                elif attribute == 'tags':
+                elif attribute == "tags":
                     if len(task.tags) != 0:
-                        task_report.append(
-                            ', '.join([tag.id for tag in task.tags])
-                        )
+                        task_report.append(", ".join([tag.id for tag in task.tags]))
                     else:
-                        task_report.append('')
-                elif attribute == 'due':
+                        task_report.append("")
+                elif attribute == "due":
                     task_report.append(self._date2str(task.due))
                 else:
                     try:
                         task_report.append(task.__getattribute__(attribute))
                     except AttributeError:
-                        task_report.append('')
+                        task_report.append("")
             report_data.append(task_report)
-        print(tabulate(report_data, headers=labels, tablefmt='simple'))
+        print(tabulate(report_data, headers=labels, tablefmt="simple"))
 
 
 class Projects(BaseReport):
@@ -183,40 +173,26 @@ class Projects(BaseReport):
         report_data = []
 
         # Gather tasks without project
-        tasks_without_project = self.session.query(Task).\
-            filter_by(state='open').filter_by(project_id=None).count()
+        tasks_without_project = (
+            self.session.query(Task)
+            .filter_by(state="open")
+            .filter_by(project_id=None)
+            .count()
+        )
 
         if tasks_without_project > 0:
-            report_data.append(
-                [
-                    'None',
-                    tasks_without_project,
-                    'Tasks without project'
-                ]
-            )
+            report_data.append(["None", tasks_without_project, "Tasks without project"])
 
         # Gather project tasks
         active_projects = self.session.query(Project)
 
-        for project in sorted(
-            active_projects.all(),
-            key=lambda k: k.id,
-            reverse=True,
-        ):
-            open_tasks = [
-                task for task in project.tasks if task.state == 'open'
-            ]
+        for project in sorted(active_projects.all(), key=lambda k: k.id, reverse=True,):
+            open_tasks = [task for task in project.tasks if task.state == "open"]
 
             if len(open_tasks) > 0:
-                report_data.append(
-                    [
-                        project.id,
-                        len(open_tasks),
-                        project.description
-                    ]
-                )
+                report_data.append([project.id, len(open_tasks), project.description])
 
-        print(tabulate(report_data, headers=labels, tablefmt='simple'))
+        print(tabulate(report_data, headers=labels, tablefmt="simple"))
 
 
 class Tags(BaseReport):
@@ -251,22 +227,10 @@ class Tags(BaseReport):
         # Gather tag tasks
         tags = self.session.query(Tag)
 
-        for tag in sorted(
-            tags.all(),
-            key=lambda k: k.id,
-            reverse=True,
-        ):
-            open_tasks = [
-                task for task in tag.tasks if task.state == 'open'
-            ]
+        for tag in sorted(tags.all(), key=lambda k: k.id, reverse=True,):
+            open_tasks = [task for task in tag.tasks if task.state == "open"]
 
             if len(open_tasks) > 0:
-                report_data.append(
-                    [
-                        tag.id,
-                        len(open_tasks),
-                        tag.description
-                    ]
-                )
+                report_data.append([tag.id, len(open_tasks), tag.description])
 
-        print(tabulate(report_data, headers=labels, tablefmt='simple'))
+        print(tabulate(report_data, headers=labels, tablefmt="simple"))

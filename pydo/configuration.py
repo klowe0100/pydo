@@ -35,7 +35,7 @@ class Config(UserDict):
         data(dict): Program configuration.
     """
 
-    def __init__(self, config_path='~/.local/share/pydo/config.yaml'):
+    def __init__(self, config_path="~/.local/share/pydo/config.yaml"):
         self.config_path = os.path.expanduser(config_path)
         self.load()
 
@@ -57,7 +57,7 @@ class Config(UserDict):
         Arguments:
             key(str): Configuration key to fetch
         """
-        keys = key.split('.')
+        keys = key.split(".")
         value = self.data.copy()
 
         for key in keys:
@@ -71,22 +71,17 @@ class Config(UserDict):
         """
 
         try:
-            with open(os.path.expanduser(self.config_path), 'r') as f:
+            with open(os.path.expanduser(self.config_path), "r") as f:
                 try:
                     self.data = YAML().load(f)
                 except ScannerError as e:
                     log.error(
-                        'Error parsing yaml of configuration file '
-                        '{}: {}'.format(
-                            e.problem_mark,
-                            e.problem,
-                        )
+                        "Error parsing yaml of configuration file "
+                        "{}: {}".format(e.problem_mark, e.problem,)
                     )
                     sys.exit(1)
         except FileNotFoundError:
-            log.error(
-                'Error opening configuration file {}'.format(self.config_path)
-            )
+            log.error("Error opening configuration file {}".format(self.config_path))
             sys.exit(1)
 
     def save(self):
@@ -94,7 +89,7 @@ class Config(UserDict):
         Saves configuration in the configuration YAML file.
         """
 
-        with open(os.path.expanduser(self.config_path), 'w+') as f:
+        with open(os.path.expanduser(self.config_path), "w+") as f:
             yaml = YAML()
             yaml.default_flow_style = False
             yaml.dump(self.data, f)

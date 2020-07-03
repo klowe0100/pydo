@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.mark.userfixtures('tmpdir')
+@pytest.mark.userfixtures("tmpdir")
 class TestInstall:
     """
     Test class to ensure that the install process works as expected
@@ -18,19 +18,19 @@ class TestInstall:
 
     @pytest.fixture(autouse=True)
     def setup(self, session):
-        self.alembic_patch = patch('pydo.ops.alembic', autospect=True)
+        self.alembic_patch = patch("pydo.ops.alembic", autospect=True)
         self.alembic = self.alembic_patch.start()
-        self.homedir = os.path.expanduser('~')
+        self.homedir = os.path.expanduser("~")
         self.log = Mock()
         self.log_info = self.log.info
-        self.os_patch = patch('pydo.ops.os', autospect=True)
+        self.os_patch = patch("pydo.ops.os", autospect=True)
         self.os = self.os_patch.start()
         self.os.path.expanduser.side_effect = os.path.expanduser
         self.os.path.join.side_effect = os.path.join
-        self.os.path.dirname.return_value = '/home/test/.venv/pydo/pydo'
+        self.os.path.dirname.return_value = "/home/test/.venv/pydo/pydo"
         self.session = session
 
-        yield 'setup'
+        yield "setup"
 
         self.alembic_patch.stop()
         self.os_patch.stop()
@@ -40,9 +40,9 @@ class TestInstall:
 
         install(self.session, self.log)
         self.os.makedirs.assert_called_with(
-                os.path.join(self.homedir, '.local/share/pydo')
+            os.path.join(self.homedir, ".local/share/pydo")
         )
-        assert call('Data directory created') in self.log_info.mock_calls
+        assert call("Data directory created") in self.log_info.mock_calls
 
     def test_doesnt_create_data_directory_if_exist(self):
         self.os.path.exists.return_value = True
@@ -52,15 +52,13 @@ class TestInstall:
 
     def test_initializes_database(self):
         alembic_args = [
-            '-c',
-            '/home/test/.venv/pydo/pydo/migrations/alembic.ini',
-            'upgrade',
-            'head',
+            "-c",
+            "/home/test/.venv/pydo/pydo/migrations/alembic.ini",
+            "upgrade",
+            "head",
         ]
 
         install(self.session, self.log)
 
         self.alembic.config.main.assert_called_with(argv=alembic_args)
-        assert call('Database initialized') in self.log_info.mock_calls
-
-
+        assert call("Database initialized") in self.log_info.mock_calls

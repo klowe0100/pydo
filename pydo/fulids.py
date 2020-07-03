@@ -40,27 +40,23 @@ class fulid:
 
     def __init__(
         self,
-        character_set='asdfghjwer',
-        forbidden_charset='ilou|&:;()<>~*@?!$#[]{}\\/\'"`',
+        character_set="asdfghjwer",
+        forbidden_charset="ilou|&:;()<>~*@?!$#[]{}\\/'\"`",
         fulid=None,
     ):
         self.charset = list(character_set)
         self.forbidden_charset = list(forbidden_charset)
         self.str = fulid
 
-        forbidden_characters = set(self.charset).intersection(
-            self.forbidden_charset
-        )
+        forbidden_characters = set(self.charset).intersection(self.forbidden_charset)
         if len(forbidden_characters) > 0:
             raise ValueError(
-                'The characters {} were found in the fulid charset, '
-                'but they are forbidden'.format(
-                    ', '.join(forbidden_characters)
-                )
+                "The characters {} were found in the fulid charset, "
+                "but they are forbidden".format(", ".join(forbidden_characters))
             )
 
     def __repr__(self):
-        return '<{}({!r})>'.format(self.__class__.__name__, self.str)
+        return "<{}({!r})>".format(self.__class__.__name__, self.str)
 
     def new(self, last_fulid=None):
         """
@@ -78,27 +74,14 @@ class fulid:
         if last_fulid is None:
             id = 7 * self.charset[0].upper()
         else:
-            last_fulid = fulid(
-                self.charset,
-                self.forbidden_charset,
-                last_fulid
-            )
-            id = self._encode_id(
-                self._decode_id(last_fulid.id()) + 1,
-                pad=7,
-            )
+            last_fulid = fulid(self.charset, self.forbidden_charset, last_fulid)
+            id = self._encode_id(self._decode_id(last_fulid.id()) + 1, pad=7,)
 
-        self.str = ''.join([
-            temp_ulid.timestamp().str,
-            temp_ulid.randomness().str[:9],
-            id,
-        ])
-
-        return fulid(
-            self.charset,
-            self.forbidden_charset,
-            self.str
+        self.str = "".join(
+            [temp_ulid.timestamp().str, temp_ulid.randomness().str[:9], id,]
         )
+
+        return fulid(self.charset, self.forbidden_charset, self.str)
 
     def from_str(self, fulid_string):
         """
@@ -111,11 +94,7 @@ class fulid:
         Returns:
             fulid (fulid object): Fulid object
         """
-        return fulid(
-            self.charset,
-            self.forbidden_charset,
-            fulid_string,
-        )
+        return fulid(self.charset, self.forbidden_charset, fulid_string,)
 
     def timestamp(self):
         """
@@ -165,13 +144,12 @@ class fulid:
                 num.append(str(self.charset.index(character.lower())))
             except ValueError:
                 raise ValueError(
-                    'Error decoding {} into a number as character {} is not '
-                    'in the configuration fulid.characters'.format(
-                        number_string,
-                        character,
+                    "Error decoding {} into a number as character {} is not "
+                    "in the configuration fulid.characters".format(
+                        number_string, character,
                     )
                 )
-        return int(''.join(num))
+        return int("".join(num))
 
     def _encode_id(self, number, pad=None):
         """
@@ -197,7 +175,7 @@ class fulid:
                 number_characters.append(self.charset[remainder].upper())
             number = number // base
 
-        number_string = ''.join(number_characters[::-1])
+        number_string = "".join(number_characters[::-1])
 
         if pad is not None and len(number_string) != pad:
             pad_string = self.charset[0].upper() * (pad - len(number_string))
@@ -251,10 +229,7 @@ class fulid:
         """
 
         # Invert the sulids dictionary so it's searchable
-        sulids = {
-            value: key
-            for key, value in self.sulids(fulids).items()
-        }
+        sulids = {value: key for key, value in self.sulids(fulids).items()}
         try:
             return sulids[sulid]
         except KeyError:

@@ -111,7 +111,6 @@ import abc
 
 
 class Entity(abc.ABC):
-
     @abc.abstractmethod
     def __init__(self, id: str, description: Optional[str] = None):
         self.id = id
@@ -135,7 +134,7 @@ class Project(Entity):
         super().__init__(id, description)
 
     def __repr__(self) -> str:
-        return f'<Project {self.id}>'
+        return f"<Project {self.id}>"
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Project):
@@ -152,7 +151,7 @@ class Tag(Entity):
         super().__init__(id, description)
 
     def __repr__(self) -> str:
-        return f'<Tag {self.id}>'
+        return f"<Tag {self.id}>"
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Tag):
@@ -170,7 +169,7 @@ class Task(Entity):
         id: str,
         description: str,
         state: str,
-        type: str = 'task',
+        type: str = "task",
         agile: Optional[str] = None,
         body: Optional[str] = None,
         closed: Optional[datetime] = None,
@@ -201,7 +200,7 @@ class Task(Entity):
         self.willpower = willpower
 
     def __repr__(self) -> str:
-        return f'<Task {self.id}>'
+        return f"<Task {self.id}>"
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Task):

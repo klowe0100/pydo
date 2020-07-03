@@ -91,5 +91,3 @@ parent task either with it's id or with `freeze -p` using the children id.
 Frozen tasks will appear in the `frozen` report.
 
 To resume the children creation use the `unfreeze` command.
-
-

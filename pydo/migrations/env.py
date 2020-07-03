@@ -21,7 +21,7 @@ fileConfig(config.config_file_name)
 
 import sys
 
-sys.path = ['', '..'] + sys.path[1:]
+sys.path = ["", ".."] + sys.path[1:]
 
 from pydo.adapters.orm import metadata
 
@@ -35,9 +35,10 @@ target_metadata = metadata
 
 
 def get_url():
-    basedir = '~/.local/share/pydo'
-    return os.environ.get('PYDO_DATABASE_URL') or \
-        'sqlite:///' + os.path.join(os.path.expanduser(basedir), 'main.db')
+    basedir = "~/.local/share/pydo"
+    return os.environ.get("PYDO_DATABASE_URL") or "sqlite:///" + os.path.join(
+        os.path.expanduser(basedir), "main.db"
+    )
 
 
 def run_migrations_offline():
@@ -83,9 +84,7 @@ def run_migrations_online():
     connectable = create_engine(get_url())
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

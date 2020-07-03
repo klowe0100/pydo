@@ -14,9 +14,9 @@ import json
 import os
 
 
-def install(session, log, data_directory = '~/.local/share/pydo'):
+def install(session, log, data_directory="~/.local/share/pydo"):
 
-    '''
+    """
     Function to create the environment for pydo.
 
     Arguments:
@@ -25,29 +25,29 @@ def install(session, log, data_directory = '~/.local/share/pydo'):
 
     Returns:
         None
-    '''
+    """
 
     # Create data directory
     data_directory = os.path.expanduser(data_directory)
     if not os.path.exists(data_directory):
         os.makedirs(data_directory)
-        log.info('Data directory created')
+        log.info("Data directory created")
 
     # Install the database schema
     pydo_dir = os.path.dirname(os.path.abspath(__file__))
 
     alembic_args = [
-        '-c',
-        os.path.join(pydo_dir, 'migrations/alembic.ini'),
-        'upgrade',
-        'head',
+        "-c",
+        os.path.join(pydo_dir, "migrations/alembic.ini"),
+        "upgrade",
+        "head",
     ]
     alembic.config.main(argv=alembic_args)
-    log.info('Database initialized')
+    log.info("Database initialized")
 
 
 def export(log):
-    '''
+    """
     Function to export the database to json to stdout.
 
     Arguments:
@@ -55,17 +55,14 @@ def export(log):
 
     Returns:
         stdout: json database dump.
-    '''
+    """
 
     meta = MetaData()
     meta.reflect(bind=engine)
     data = {}
-    log.debug('Extracting data from database')
+    log.debug("Extracting data from database")
     for table in meta.sorted_tables:
-        data[table.name] = [
-            dict(row)
-            for row in engine.execute(table.select())
-        ]
+        data[table.name] = [dict(row) for row in engine.execute(table.select())]
 
-    log.debug('Converting to json and printing')
+    log.debug("Converting to json and printing")
     print(json.dumps(data))

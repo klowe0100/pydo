@@ -10,8 +10,9 @@ class ProjectFactory(factory.Factory):
     """
     Class to generate a fake project.
     """
-    id = factory.Sequence(lambda n: 'project_{}'.format(n))
-    description = factory.Faker('sentence')
+
+    id = factory.Sequence(lambda n: "project_{}".format(n))
+    description = factory.Faker("sentence")
 
     class Meta:
         model = model.Project
@@ -19,26 +20,23 @@ class ProjectFactory(factory.Factory):
 
 class TaskFactory(factory.Factory):
     id = factory.LazyFunction(lambda: fulid().new().str)
-    description = factory.Faker('sentence')
-    state = factory.Faker(
-        'word',
-        ext_word_list=config.get('task.allowed_states')
-    )
-    agile = factory.Faker('word', ext_word_list=['backlog', 'todo', None])
-    type = 'task'
-    priority = factory.Faker('random_number')
+    description = factory.Faker("sentence")
+    state = factory.Faker("word", ext_word_list=config.get("task.allowed_states"))
+    agile = factory.Faker("word", ext_word_list=["backlog", "todo", None])
+    type = "task"
+    priority = factory.Faker("random_number")
 
     # Let half the tasks have a due date
 
     @factory.lazy_attribute
     def due(self):
         if random.random() > 0.5:
-            return factory.Faker('date_time').generate({})
+            return factory.Faker("date_time").generate({})
 
     @factory.lazy_attribute
     def closed(self):
-        if self.state == 'completed' or self.state == 'deleted':
-            return factory.Faker('date_time').generate({})
+        if self.state == "completed" or self.state == "deleted":
+            return factory.Faker("date_time").generate({})
 
     class Meta:
         model = model.Task
@@ -64,8 +62,9 @@ class TagFactory(factory.Factory):
     """
     Class to generate a fake tag.
     """
-    id = factory.Sequence(lambda n: 'tag_{}'.format(n))
-    description = factory.Faker('sentence')
+
+    id = factory.Sequence(lambda n: "tag_{}".format(n))
+    description = factory.Faker("sentence")
 
     class Meta:
         model = model.Tag

@@ -3,12 +3,30 @@ name: Lint
 on: [push, pull_request]
 
 jobs:
-  lint:
+  Black:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
       - name: Black
         uses: psf/black@stable
+  Flake8:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
       - name: Flake8
         uses: cclauss/GitHub-Action-for-Flake8@v0.5.0
+  Mypy:
+    runs-on: ubuntu-latest
+    name: Mypy
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Install Dependencies
+      run: pip install mypy
+    - name: mypy
+      run: mypy

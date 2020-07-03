@@ -8,7 +8,7 @@ import pytest
 
 @pytest.fixture
 def in_memory_db():
-    engine = create_engine('sqlite:///:memory:')
+    engine = create_engine("sqlite:///:memory:")
     metadata.create_all(engine)
     return engine
 
@@ -18,6 +18,7 @@ def session(in_memory_db):
     start_mappers()
     yield sessionmaker(bind=in_memory_db)()
     clear_mappers()
+
 
 # from alembic.command import upgrade
 # from alembic.config import Config
@@ -79,4 +80,3 @@ def session(in_memory_db):
 #     # Close session and rollback transaction
 #     session.close()
 #     transaction.rollback()
-

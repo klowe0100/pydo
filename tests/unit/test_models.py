@@ -23,13 +23,13 @@ class BaseModelTest:
 
     def test_attributes_defined(self):
         for attribute in self.model_attributes:
-            assert getattr(self.model, attribute) == \
-                getattr(self.dummy_instance, attribute)
+            assert getattr(self.model, attribute) == getattr(
+                self.dummy_instance, attribute
+            )
 
 
-@pytest.mark.usefixtures('base_setup')
+@pytest.mark.usefixtures("base_setup")
 class TestTask(BaseModelTest):
-
     @pytest.fixture(autouse=True)
     def setup(self, session):
         self.dummy_instance = factories.TaskFactory.create()
@@ -42,25 +42,24 @@ class TestTask(BaseModelTest):
             priority=self.dummy_instance.priority,
         )
         self.model_attributes = [
-            'agile',
-            'body',
-            'estimate',
-            'due',
-            'fun',
-            'id',
-            'priority',
-            'state',
-            'title',
-            'type',
-            'value',
-            'wait',
-            'willpower',
+            "agile",
+            "body",
+            "estimate",
+            "due",
+            "fun",
+            "id",
+            "priority",
+            "state",
+            "title",
+            "type",
+            "value",
+            "wait",
+            "willpower",
         ]
 
 
-@pytest.mark.usefixtures('base_setup')
+@pytest.mark.usefixtures("base_setup")
 class TestRecurrentTask(BaseModelTest):
-
     @pytest.fixture(autouse=True)
     def setup(self, session):
         self.dummy_instance = factories.RecurrentTaskFactory.create()
@@ -75,31 +74,29 @@ class TestRecurrentTask(BaseModelTest):
             recurrence_type=self.dummy_instance.recurrence_type,
         )
         self.model_attributes = [
-            'agile',
-            'body',
-            'estimate',
-            'due',
-            'fun',
-            'id',
-            'priority',
-            'recurrence',
-            'recurrence_type',
-            'state',
-            'title',
-            'value',
-            'wait',
-            'willpower',
+            "agile",
+            "body",
+            "estimate",
+            "due",
+            "fun",
+            "id",
+            "priority",
+            "recurrence",
+            "recurrence_type",
+            "state",
+            "title",
+            "value",
+            "wait",
+            "willpower",
         ]
 
 
-@pytest.mark.usefixtures('base_setup')
+@pytest.mark.usefixtures("base_setup")
 class TestProject(BaseModelTest):
-
     @pytest.fixture(autouse=True)
     def setup(self, session):
         self.dummy_instance = factories.ProjectFactory.create()
         self.model = model.Project(
-            id=self.dummy_instance.id,
-            description=self.dummy_instance.description,
+            id=self.dummy_instance.id, description=self.dummy_instance.description,
         )
-        self.model_attributes = ['id', 'description']
+        self.model_attributes = ["id", "description"]

@@ -1,15 +1,18 @@
-from sqlalchemy import \
-    Column, \
-    DateTime, \
-    Float, \
-    ForeignKey, \
-    Integer, \
-    MetaData, \
-    String, \
-    Table, \
-    Text
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    Text,
+)
+
 # create_engine, \
 from sqlalchemy.orm import mapper
+
 # , relationship
 
 from pydo import model
@@ -17,23 +20,24 @@ from pydo import model
 metadata = MetaData()
 
 task = Table(
-    'task', metadata,
-    Column('id', String(64), primary_key=True, doc='Task fulid'),
-    Column('agile', String(64), doc='Task agile state'),
-    Column('body', Text),
-    Column('closed', DateTime),
-    Column('due', DateTime),
-    Column('estimate', Float, doc='Task estimate size'),
-    Column('fun', Integer),
-    Column('parent_id', String(64), ForeignKey('task.id')),
-    Column('priority', Integer),
-    Column('project_id', Integer, ForeignKey('project.id')),
-    Column('state', String(64), nullable=False),
-    Column('description', String(255), nullable=False),
-    Column('type', String(64), nullable=False),
-    Column('value', Integer, doc='Task value'),
-    Column('wait', DateTime, doc='Wait datetime'),
-    Column('willpower', Integer, doc='Task willpower size'),
+    "task",
+    metadata,
+    Column("id", String(64), primary_key=True, doc="Task fulid"),
+    Column("agile", String(64), doc="Task agile state"),
+    Column("body", Text),
+    Column("closed", DateTime),
+    Column("due", DateTime),
+    Column("estimate", Float, doc="Task estimate size"),
+    Column("fun", Integer),
+    Column("parent_id", String(64), ForeignKey("task.id")),
+    Column("priority", Integer),
+    Column("project_id", Integer, ForeignKey("project.id")),
+    Column("state", String(64), nullable=False),
+    Column("description", String(255), nullable=False),
+    Column("type", String(64), nullable=False),
+    Column("value", Integer, doc="Task value"),
+    Column("wait", DateTime, doc="Wait datetime"),
+    Column("willpower", Integer, doc="Task willpower size"),
 )
 
 #     project = relationship('Project', back_populates='tasks')
@@ -52,15 +56,17 @@ task = Table(
 #     # )
 
 project = Table(
-    'project', metadata,
-    Column('id', String(64), primary_key=True, doc='Project name'),
-    Column('description', String(255), nullable=True),
+    "project",
+    metadata,
+    Column("id", String(64), primary_key=True, doc="Project name"),
+    Column("description", String(255), nullable=True),
 )
 
 tag = Table(
-    'tag', metadata,
-    Column('id', String(64), primary_key=True, doc='Tag name'),
-    Column('description', String(255), nullable=True),
+    "tag",
+    metadata,
+    Column("id", String(64), primary_key=True, doc="Tag name"),
+    Column("description", String(255), nullable=True),
 )
 
 

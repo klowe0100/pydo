@@ -10,7 +10,7 @@ from pydo.adapters.orm import metadata, start_mappers
 @pytest.fixture
 def in_memory_db():
     """ SQLite database engine creator """
-    engine = create_engine('sqlite:///:memory:')
+    engine = create_engine("sqlite:///:memory:")
     metadata.create_all(engine)
     return engine
 
@@ -24,15 +24,14 @@ def session(in_memory_db):
 
 
 class FakeLogger(list):
-
     def debug(self, message):
-        self.append(('DEBUG', message))
+        self.append(("DEBUG", message))
 
     def error(self, message):
-        self.append(('ERROR', message))
+        self.append(("ERROR", message))
 
     def info(self, message):
-        self.append(('INFO', message))
+        self.append(("INFO", message))
 
 
 @pytest.fixture
