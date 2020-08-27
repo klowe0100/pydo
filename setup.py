@@ -59,14 +59,7 @@ setup(
     package_data={"pydo": ["migrations/*", "migrations/versions/*"]},
     entry_points={"console_scripts": ["pydo = pydo:main"]},
     cmdclass={"install": PostInstallCommand, "egg_info": PostEggInfoCommand},
-    setup_requires=[
-        "alembic>=1.3.1",
-        "argcomplete>=1.11.1",
-        "SQLAlchemy>=1.3.11",
-        "python-dateutil>=2.8.1",
-        "tabulate>=0.8.7",
-        "ulid-py>=0.0.12",
-    ],
+    setup_requires=["alembic", "SQLAlchemy",],
     install_requires=[
         "alembic",
         "Click",
