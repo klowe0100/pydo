@@ -14,7 +14,7 @@ repos:
         id: pip-compile
       - name: Build requirements-dev.txt
         id: pip-compile
-        args: ['requirements-dev.in']
+        args: ['--allow-unsafe', 'requirements-dev.in']
       - name: Build mkdocs requirements.txt
         id: pip-compile
         args: ['docs/requirements.txt']
