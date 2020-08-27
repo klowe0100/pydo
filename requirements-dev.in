@@ -1,4 +1,4 @@
--c requirements.txt
+-r requirements.txt
 pip-tools
 factory_boy
 pytest
