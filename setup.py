@@ -68,12 +68,11 @@ setup(
         "ulid-py>=0.0.12",
     ],
     install_requires=[
-        "alembic>=1.3.1",
-        "argcomplete>=1.11.1",
-        "python-dateutil>=2.8.1",
-        "ruamel.yaml>=0.16.10",
-        "SQLAlchemy>=1.3.11",
-        "tabulate>=0.8.7",
-        "ulid-py>=0.0.12",
+        "alembic",
+        "Click",
+        "ruamel.yaml",
+        "SQLAlchemy",
+        "tabulate",
+        "ulid-py",
     ],
 )
