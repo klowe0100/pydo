@@ -12,9 +12,9 @@ repos:
     hooks:
       - name: Build requirements.txt
         id: pip-compile
-      - name: Build dev-requirements.txt
+      - name: Build requirements-dev.txt
         id: pip-compile
-        args: ['dev-requirements.in']
+        args: ['requirements-dev.in']
       - name: Build mkdocs requirements.txt
         id: pip-compile
         args: ['docs/requirements.txt']
