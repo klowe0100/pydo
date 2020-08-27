@@ -1,7 +1,11 @@
+import os
+from unittest.mock import Mock, call, patch
+
 import pytest
 
+from pydo import services
 
-@pytest.mark.userfixtures("tmpdir")
+
 class TestInstall:
     """
     Test class to ensure that the install process works as expected
@@ -18,12 +22,12 @@ class TestInstall:
 
     @pytest.fixture(autouse=True)
     def setup(self, session):
-        self.alembic_patch = patch("pydo.ops.alembic", autospect=True)
+        self.alembic_patch = patch("pydo.services.alembic", autospect=True)
         self.alembic = self.alembic_patch.start()
         self.homedir = os.path.expanduser("~")
         self.log = Mock()
         self.log_info = self.log.info
-        self.os_patch = patch("pydo.ops.os", autospect=True)
+        self.os_patch = patch("pydo.services.os", autospect=True)
         self.os = self.os_patch.start()
         self.os.path.expanduser.side_effect = os.path.expanduser
         self.os.path.join.side_effect = os.path.join
@@ -38,7 +42,7 @@ class TestInstall:
     def test_creates_the_data_directory_if_it_doesnt_exist(self):
         self.os.path.exists.return_value = False
 
-        install(self.session, self.log)
+        services.install(self.session, self.log)
         self.os.makedirs.assert_called_with(
             os.path.join(self.homedir, ".local/share/pydo")
         )
@@ -47,7 +51,7 @@ class TestInstall:
     def test_doesnt_create_data_directory_if_exist(self):
         self.os.path.exists.return_value = True
 
-        install(self.session, self.log)
+        services.install(self.session, self.log)
         assert self.os.makedirs.called is False
 
     def test_initializes_database(self):
@@ -58,7 +62,7 @@ class TestInstall:
             "head",
         ]
 
-        install(self.session, self.log)
+        services.install(self.session, self.log)
 
         self.alembic.config.main.assert_called_with(argv=alembic_args)
         assert call("Database initialized") in self.log_info.mock_calls

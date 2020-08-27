@@ -6,12 +6,14 @@ Functions:
     export: Function to export the database to json to stdout.
 """
 
-from pydo.model import engine
-from sqlalchemy import MetaData
+# import json
+import os
 
 import alembic.config
-import json
-import os
+
+# from pydo.model import engine
+
+# from sqlalchemy import MetaData
 
 
 def install(session, log, data_directory="~/.local/share/pydo"):
@@ -46,23 +48,23 @@ def install(session, log, data_directory="~/.local/share/pydo"):
     log.info("Database initialized")
 
 
-def export(log):
-    """
-    Function to export the database to json to stdout.
-
-    Arguments:
-        log (logging object): log handler
-
-    Returns:
-        stdout: json database dump.
-    """
-
-    meta = MetaData()
-    meta.reflect(bind=engine)
-    data = {}
-    log.debug("Extracting data from database")
-    for table in meta.sorted_tables:
-        data[table.name] = [dict(row) for row in engine.execute(table.select())]
-
-    log.debug("Converting to json and printing")
-    print(json.dumps(data))
+# def export(log):
+#     """
+#     Function to export the database to json to stdout.
+#
+#     Arguments:
+#         log (logging object): log handler
+#
+#     Returns:
+#         stdout: json database dump.
+#     """
+#
+#     meta = MetaData()
+#     meta.reflect(bind=engine)
+#     data = {}
+#     log.debug("Extracting data from database")
+#     for table in meta.sorted_tables:
+#         data[table.name] = [dict(row) for row in engine.execute(table.select())]
+#
+#     log.debug("Converting to json and printing")
+#     print(json.dumps(data))
