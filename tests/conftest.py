@@ -95,13 +95,21 @@ class FakeRepository(repository.AbstractRepository):
         """
         Method to search for items that match a condition.
         """
-        return sorted(
-            [
-                entity
-                for entity in self._select_table(obj_model)
-                if re.match(getattr(entity, field), value)
-            ]
-        )
+        try:
+            result = sorted(
+                [
+                    entity
+                    for entity in self._select_table(obj_model)
+                    if re.match(getattr(entity, field), value)
+                ]
+            )
+        except AttributeError:
+            return None
+
+        if len(result) == 0:
+            return None
+        else:
+            return result
 
 
 @pytest.fixture()

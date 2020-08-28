@@ -1,5 +1,5 @@
 import abc
-from typing import Any, List
+from typing import Any, List, Union
 
 from pydo import types
 
@@ -34,7 +34,7 @@ class AbstractRepository(abc.ABC):
     @abc.abstractmethod
     def search(
         self, obj_model: types.Entity, field: str, value: str
-    ) -> List[types.Entity]:
+    ) -> Union[List[types.Entity], None]:
         """
         Method to search for items that match a condition.
         """
@@ -65,12 +65,20 @@ class SqlAlchemyRepository(AbstractRepository):
 
     def search(
         self, obj_model: types.Entity, field: str, value: str
-    ) -> List[types.Entity]:
+    ) -> Union[List[types.Entity], None]:
         """
         Method to search for items that match a condition.
         """
-        return (
-            self.session.query(obj_model)
-            .filter(getattr(obj_model, field).like(f"%{value}"))
-            .all()
-        )
+        try:
+            result = (
+                self.session.query(obj_model)
+                .filter(getattr(obj_model, field).like(f"%{value}"))
+                .all()
+            )
+        except AttributeError:
+            return None
+
+        if len(result) == 0:
+            return None
+        else:
+            return result
