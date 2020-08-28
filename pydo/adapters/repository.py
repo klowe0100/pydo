@@ -31,6 +31,15 @@ class AbstractRepository(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def search(
+        self, obj_model: types.Entity, field: str, value: str
+    ) -> List[types.Entity]:
+        """
+        Method to search for items that match a condition.
+        """
+        raise NotImplementedError
+
 
 class SqlAlchemyRepository(AbstractRepository):
     def __init__(self, session: Any) -> None:
@@ -53,3 +62,15 @@ class SqlAlchemyRepository(AbstractRepository):
         Method to persist the changes into the repository.
         """
         self.session.commit()
+
+    def search(
+        self, obj_model: types.Entity, field: str, value: str
+    ) -> List[types.Entity]:
+        """
+        Method to search for items that match a condition.
+        """
+        return (
+            self.session.query(obj_model)
+            .filter(getattr(obj_model, field).like(f"%{value}"))
+            .all()
+        )

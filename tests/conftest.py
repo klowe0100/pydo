@@ -1,5 +1,6 @@
 # pylint: disable=redefined-outer-name
 
+import re
 from typing import Any, List
 
 import pytest
@@ -62,24 +63,22 @@ class FakeRepository(repository.AbstractRepository):
     def _get_object(self, id: str, entities: types.Entities):
         return next(entity for entity in entities if entity.id == id)
 
-    def get(self, obj_model: types.Entity, id: str) -> types.Entity:
+    def _select_table(self, obj_model: types.Entity) -> List[types.Entity]:
         if "project" in obj_model.__doc__:
-            return self._get_object(id, self._project)
+            return self._project
         elif "tag" in obj_model.__doc__:
-            return self._get_object(id, self._tag)
+            return self._tag
         elif "task" in obj_model.__doc__:
-            return self._get_object(id, self._task)
+            return self._task
+
+    def get(self, obj_model: types.Entity, id: str) -> types.Entity:
+        return self._get_object(id, self._select_table(obj_model))
 
     def all(self, obj_model: types.Entity) -> List[types.Entity]:
         """
         Method to get all items of the repository.
         """
-        if "project" in obj_model.__doc__:
-            return sorted(list(self._project))
-        elif "tag" in obj_model.__doc__:
-            return sorted(list(self._tag))
-        elif "task" in obj_model.__doc__:
-            return sorted(list(self._task))
+        return sorted(list(self._select_table(obj_model)))
 
     def commit(self) -> None:
         """
@@ -90,6 +89,20 @@ class FakeRepository(repository.AbstractRepository):
         # them to the real set when using this method.
         pass
 
+    def search(
+        self, obj_model: types.Entity, field: str, value: str
+    ) -> List[types.Entity]:
+        """
+        Method to search for items that match a condition.
+        """
+        return sorted(
+            [
+                entity
+                for entity in self._select_table(obj_model)
+                if re.match(getattr(entity, field), value)
+            ]
+        )
+
 
 @pytest.fixture()
 def repo():
@@ -98,7 +111,7 @@ def repo():
 
 @pytest.fixture()
 def insert_task(repo):
-    task = factories.TaskFactory.create()
+    task = factories.TaskFactory.create(state="open")
     repo.add(task)
     repo.commit()
 
@@ -107,7 +120,7 @@ def insert_task(repo):
 
 @pytest.fixture()
 def insert_tasks(repo):
-    tasks = factories.TaskFactory.create_batch(3)
+    tasks = factories.TaskFactory.create_batch(3, state="open")
     [repo.add(task) for task in tasks]
     repo.commit()
 

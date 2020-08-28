@@ -2,6 +2,7 @@ import pytest
 
 from pydo import model
 from pydo.adapters import repository
+from pydo.fulids import fulid
 from tests import factories
 
 models_to_try_sql = [
@@ -24,7 +25,7 @@ add_fixtures = [model_case[:2] for model_case in models_to_try_sql]
 
 class TestSQLAlchemyRepository:
     @pytest.mark.parametrize("factory,table", add_fixtures)
-    def test_repository_can_save_an_object(self, factory, table, session):
+    def test_repository_can_add_an_object(self, factory, table, session):
         obj = factory.create()
 
         repo = repository.SqlAlchemyRepository(session)
@@ -60,14 +61,29 @@ class TestSQLAlchemyRepository:
     def test_repository_can_retrieve_all_objects(
         self, factory, table, session, obj_model, insert_objects_sql,
     ):
-        expected_obj = insert_objects_sql
+        expected_objs = insert_objects_sql
 
         repo = repository.SqlAlchemyRepository(session)
-        retrieved_obj = repo.all(obj_model)
+        retrieved_objs = repo.all(obj_model)
+
+        assert retrieved_objs == expected_objs
+        assert len(retrieved_objs) == 3
+        assert retrieved_objs[0].description == expected_objs[0].description
+
+    @pytest.mark.parametrize(
+        "factory,table,obj_model,insert_objects_sql",
+        models_to_try_sql,
+        indirect=["insert_objects_sql"],
+    )
+    def test_repository_can_filter_by_property(
+        self, factory, table, session, obj_model, insert_objects_sql,
+    ):
+        expected_obj = [insert_objects_sql[1]]
+
+        repo = repository.SqlAlchemyRepository(session)
+        retrieved_obj = repo.search(obj_model, "id", insert_objects_sql[1].id)
 
         assert retrieved_obj == expected_obj
-        assert len(retrieved_obj) == 3
-        assert retrieved_obj[0].description == expected_obj[0].description
 
 
 class TestFakeRepository:
@@ -113,3 +129,17 @@ class TestFakeRepository:
         assert retrieved_obj == expected_obj
         assert len(retrieved_obj) == 3
         assert retrieved_obj[0].description == expected_obj[0].description
+
+    @pytest.mark.parametrize(
+        "factory,table,obj_model,insert_objects",
+        models_to_try_fake,
+        indirect=["insert_objects"],
+    )
+    def test_repository_can_filter_by_property(
+        self, factory, table, session, obj_model, insert_objects, repo
+    ):
+        expected_obj = [insert_objects[1]]
+
+        retrieved_obj = repo.search(obj_model, "id", insert_objects[1].id)
+
+        assert retrieved_obj == expected_obj
