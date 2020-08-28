@@ -25,6 +25,14 @@ class Entity(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def __lt__(self, other) -> bool:
+        return self.id < other.id
+
+    @abc.abstractmethod
+    def __gt__(self, other) -> bool:
+        return self.id > other.id
+
+    @abc.abstractmethod
     def __hash__(self) -> str:
         return hash(self.id)
 
@@ -44,6 +52,12 @@ class Project(Entity):
         if not isinstance(other, Project):
             return False
         return other.id == self.id
+
+    def __lt__(self, other) -> bool:
+        return super().__lt__(other)
+
+    def __gt__(self, other) -> bool:
+        return super().__gt__(other)
 
     def __hash__(self) -> str:
         return super().__hash__()
@@ -65,6 +79,12 @@ class Tag(Entity):
             return False
         return other.id == self.id
 
+    def __lt__(self, other) -> bool:
+        return super().__lt__(other)
+
+    def __gt__(self, other) -> bool:
+        return super().__gt__(other)
+
     def __hash__(self) -> str:
         return super().__hash__()
 
@@ -78,7 +98,7 @@ class Task(Entity):
         self,
         id: str,
         description: str,
-        state: str,
+        state: str = "open",
         type: str = "task",
         agile: Optional[str] = None,
         body: Optional[str] = None,
@@ -116,6 +136,12 @@ class Task(Entity):
         if not isinstance(other, Task):
             return False
         return other.id == self.id
+
+    def __lt__(self, other) -> bool:
+        return super().__lt__(other)
+
+    def __gt__(self, other) -> bool:
+        return super().__gt__(other)
 
     def __hash__(self) -> str:
         return super().__hash__()
