@@ -44,7 +44,7 @@ def log():
 
 
 class FakeRepository(repository.AbstractRepository):
-    def __init__(self, session: Any) -> None:
+    def __init__(self, session: Any = None) -> None:
         self._project = set()
         self._tag = set()
         self._task = set()
@@ -79,6 +79,15 @@ class FakeRepository(repository.AbstractRepository):
             return list(self._tag)
         elif isinstance(obj_model, model.Task):
             return list(self._task)
+
+    def commit(self) -> None:
+        """
+        Method to persist the changes into the repository.
+        """
+        # They are saved when adding them, if we want to mimic the behaviour of the
+        # other repositories, we should save the objects in a temporal list and move
+        # them to the real set when using this method.
+        pass
 
 
 @pytest.fixture()

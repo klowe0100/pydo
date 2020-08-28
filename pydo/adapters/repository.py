@@ -24,6 +24,13 @@ class AbstractRepository(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def commit(self) -> None:
+        """
+        Method to persist the changes into the repository.
+        """
+        raise NotImplementedError
+
 
 class SqlAlchemyRepository(AbstractRepository):
     def __init__(self, session: Any) -> None:
@@ -36,4 +43,13 @@ class SqlAlchemyRepository(AbstractRepository):
         return self.session.query(obj_model).get(id)
 
     def all(self, obj_model: types.Entity) -> List[types.Entity]:
+        """
+        Method to get all items of the repository.
+        """
         return self.session.query(obj_model).all()
+
+    def commit(self) -> None:
+        """
+        Method to persist the changes into the repository.
+        """
+        self.session.commit()

@@ -23,8 +23,7 @@ class TestSQLAlchemyRepository:
 
         repo = repository.SqlAlchemyRepository(session)
         repo.add(obj)
-
-        session.commit()
+        repo.commit()
 
         rows = list(session.execute(f'SELECT id, description FROM "{table}"'))
 
