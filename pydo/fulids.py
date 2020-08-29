@@ -51,8 +51,8 @@ class fulid:
         forbidden_characters = set(self.charset).intersection(self.forbidden_charset)
         if len(forbidden_characters) > 0:
             raise ValueError(
-                "The characters {} were found in the fulid charset, "
-                "but they are forbidden".format(", ".join(forbidden_characters))
+                f"The characters {', '.join(forbidden_characters)} were found in"
+                "the fulid charset, but they are forbidden"
             )
 
     def __repr__(self):
@@ -144,10 +144,8 @@ class fulid:
                 num.append(str(self.charset.index(character.lower())))
             except ValueError:
                 raise ValueError(
-                    "Error decoding {} into a number as character {} is not "
-                    "in the configuration fulid.characters".format(
-                        number_string, character,
-                    )
+                    f"Error decoding {number_string} into a number as character "
+                    f"{character} is not in the configuration fulid.characters"
                 )
         return int("".join(num))
 

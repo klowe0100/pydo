@@ -1,6 +1,4 @@
-from faker import Faker
-from pydo import config
-from pydo.fulids import fulid
+import datetime
 
 # from pydo.manager import TaskManager, DateManager
 # from pydo.model import Task, Project, Tag, RecurrentTask
@@ -11,82 +9,15 @@ from pydo.fulids import fulid
 #     TaskFactory
 from unittest.mock import call, patch
 
-import datetime
 import pytest
+from faker import Faker
 
-
-@pytest.mark.skip("Not yet")
-class ManagerBaseTest:
-    """
-    Abstract base test class to ensure that all the managers have the same
-    interface.
-
-    The Children classes must define the following attributes:
-        self.manager: the manager class to test.
-        self.model: the sqlalchemy model to test.
-        self.factory: a factory_boy object to create dummy objects.
-
-    Public attributes:
-        datetime (mock): datetime mock.
-        fake (Faker object): Faker object.
-        log (mock): logging mock
-        session (Session object): Database session.
-    """
-
-    @pytest.fixture(autouse=True)
-    def base_setup(self, session):
-        self.datetime_patch = patch("pydo.manager.datetime", autospect=True)
-        self.datetime = self.datetime_patch.start()
-        self.fake = Faker()
-        self.log_patch = patch("pydo.manager.log", autospect=True)
-        self.log = self.log_patch.start()
-        self.session = session
-
-        yield "base_setup"
-
-        self.datetime_patch.stop()
-        self.log_patch.stop()
-
-    def test_session_attribute_exists(self):
-        assert self.manager.session is self.session
-
-    def test_add_table_element_method_exists(self):
-        assert "add" in dir(self.manager)
-
-    def test_get_element(self):
-        element = self.factory.create()
-        assert self.manager._get(element.id) == element
-
-    def test_get_raises_valueerror_if_property_doesnt_exist(self):
-        with pytest.raises(ValueError):
-            self.manager._get("unexistent_property")
-
-    def test_update_table_element_method_exists(self):
-        assert "_update" in dir(self.manager)
-
-    def test_update_element(self):
-        element = self.factory.create()
-
-        attribute_value = self.fake.sentence()
-        object_values = {"arbitrary_key": attribute_value}
-        self.manager._update(element.id, object_values)
-
-        assert element.arbitrary_key == attribute_value
-
-    def test_update_raises_valueerror_if_element_doesnt_exist(self):
-        fake_element_id = self.fake.word()
-
-        with pytest.raises(ValueError):
-            self.manager._update(fake_element_id)
-
-    def test_extract_attributes(self):
-        element = self.factory.create()
-        attributes = self.manager._get_attributes(element)
-        assert attributes["id"] == element.id
+from pydo import config
+from pydo.fulids import fulid
 
 
 @pytest.mark.usefixtures("base_setup")
-class TestTaskManager(ManagerBaseTest):
+class OldTestTaskManager:
     """
     Class to test the TaskManager object.
 
@@ -98,24 +29,45 @@ class TestTaskManager(ManagerBaseTest):
         manager (TaskManager object): TaskManager object to test
     """
 
-    @pytest.fixture(autouse=True)
-    def setup(self, session):
-        self.session = session
+    def test_rm_tags_existent(self):
+        tag1 = TagFactory.create()
+        tag2 = TagFactory.create()
+        tag3 = TagFactory.create()
+        task_attributes = {"tags": [tag1, tag2, tag3]}
 
-        self.manager = TaskManager(session)
-        self.model = Task
-        self.factory = TaskFactory
+        self.manager._rm_tags(task_attributes, [tag1.id, tag2.id])
 
-        yield "setup"
+        assert task_attributes["tags"] == [tag3]
 
-    @patch("pydo.manager.fulid")
-    def test_manager_has_fulid_attribute_set(self, fulidMock):
-        TaskManager(self.session)
+    def test_rm_tags_non_existent(self):
+        tag1 = TagFactory.create()
+        tag2 = TagFactory.create()
+        tag3 = TagFactory.create()
+        task_attributes = {"tags": [tag1, tag2, tag3]}
 
-        fulidMock.assert_called_with(
-            config.get("fulid.characters"), config.get("fulid.forbidden_characters"),
+        with pytest.raises(ValueError):
+            self.manager._rm_tags(task_attributes, ["tag4", "tag5"])
+
+    def test_set_empty_value_removes_attribute_from_existing_task(self):
+        task = self.factory.create()
+        project = ProjectFactory.create()
+        agile = "todo"
+        estimate = 2
+        arbitrary_attribute_value = self.fake.word()
+
+        task.project = project
+        task.agile = agile
+        task.estimate = estimate
+        task.arbitrary_attribute = arbitrary_attribute_value
+
+        fulid, task_attributes = self.manager._set(
+            id=task.id, project_id="", agile="", arbitrary_attribute=""
         )
-        assert isinstance(self.manager.fulid, fulid)
+
+        assert fulid == task.id
+        assert task_attributes["project"] is None
+        assert task_attributes["agile"] is None
+        assert task_attributes["arbitrary_attribute"] is None
 
     def test_parse_arguments_extracts_title_without_quotes(self):
         title = self.fake.sentence()
@@ -480,355 +432,6 @@ class TestTaskManager(ManagerBaseTest):
 
         self.log.error.assert_called_once_with("There is no open task with fulid N_E")
 
-    def test_set_project_existent(self):
-        project = ProjectFactory.create()
-        task_attributes = {}
-
-        self.manager._set_project(task_attributes, project.id)
-
-        assert task_attributes["project"] == project
-
-    def test_set_project_non_existent(self):
-        task_attributes = {}
-
-        self.manager._set_project(task_attributes, "non_existent")
-
-        assert task_attributes["project"].id == "non_existent"
-
-    def test_set_tags_existent(self):
-        tag1 = TagFactory.create()
-        tag2 = TagFactory.create()
-        task_attributes = {}
-
-        self.manager._set_tags(task_attributes, [tag1.id, tag2.id])
-
-        assert task_attributes["tags"] == [tag1, tag2]
-
-    def test_set_tags_non_existent(self):
-        task_attributes = {}
-
-        self.manager._set_tags(task_attributes, ["non_existent"])
-
-        assert task_attributes["tags"][0].id == "non_existent"
-
-    def test_rm_tags_existent(self):
-        tag1 = TagFactory.create()
-        tag2 = TagFactory.create()
-        tag3 = TagFactory.create()
-        task_attributes = {"tags": [tag1, tag2, tag3]}
-
-        self.manager._rm_tags(task_attributes, [tag1.id, tag2.id])
-
-        assert task_attributes["tags"] == [tag3]
-
-    def test_rm_tags_non_existent(self):
-        tag1 = TagFactory.create()
-        tag2 = TagFactory.create()
-        tag3 = TagFactory.create()
-        task_attributes = {"tags": [tag1, tag2, tag3]}
-
-        with pytest.raises(ValueError):
-            self.manager._rm_tags(task_attributes, ["tag4", "tag5"])
-
-    def test_set_agile_valid(self):
-        agile = "todo"
-        task_attributes = {}
-
-        self.manager._set_agile(task_attributes, agile)
-
-        assert task_attributes["agile"] == agile
-
-    def test_set_agile_unvalid(self):
-        agile = self.fake.word()
-        task_attributes = {}
-
-        with pytest.raises(ValueError):
-            self.manager._set_agile(task_attributes, agile)
-
-    def test_set_existent_task(self):
-        task = self.factory.create()
-        project = ProjectFactory.create()
-        tag = TagFactory.create()
-        agile = "todo"
-        arbitrary_attribute_value = self.fake.word()
-
-        fulid, task_attributes = self.manager._set(
-            task.id,
-            project.id,
-            [tag.id],
-            [],
-            agile,
-            arbitrary_attribute=arbitrary_attribute_value,
-        )
-
-        assert fulid == task.id
-        assert task_attributes["project"] == project
-        assert task_attributes["tags"] == [tag]
-        assert task_attributes["agile"] == agile
-        assert task_attributes["arbitrary_attribute"] == arbitrary_attribute_value
-
-    def test_set_non_existent_task(self):
-        project = ProjectFactory.create()
-        tag = TagFactory.create()
-        agile = "todo"
-        arbitrary_attribute_value = self.fake.word()
-
-        fulid, task_attributes = self.manager._set(
-            None,
-            project.id,
-            [tag.id],
-            [],
-            agile,
-            arbitrary_attribute=arbitrary_attribute_value,
-        )
-
-        assert task_attributes["project"] == project
-        assert task_attributes["tags"] == [tag]
-        assert task_attributes["agile"] == agile
-        assert task_attributes["arbitrary_attribute"] == arbitrary_attribute_value
-
-    def test_set_empty_value_removes_attribute_from_existing_task(self):
-        task = self.factory.create()
-        project = ProjectFactory.create()
-        agile = "todo"
-        estimate = 2
-        arbitrary_attribute_value = self.fake.word()
-
-        task.project = project
-        task.agile = agile
-        task.estimate = estimate
-        task.arbitrary_attribute = arbitrary_attribute_value
-
-        fulid, task_attributes = self.manager._set(
-            id=task.id, project_id="", agile="", arbitrary_attribute=""
-        )
-
-        assert fulid == task.id
-        assert task_attributes["project"] is None
-        assert task_attributes["agile"] is None
-        assert task_attributes["arbitrary_attribute"] is None
-
-    def test_add_task(self):
-        title = self.fake.sentence()
-
-        self.manager.add(title=title)
-
-        generated_task = self.session.query(Task).one()
-        assert isinstance(fulid().from_str(generated_task.id), fulid)
-        assert generated_task.title == title
-        assert generated_task.state == "open"
-        assert generated_task.project is None
-        self.log.debug.assert_called_with(
-            "Added task {}: {}".format(generated_task.id, generated_task.title,)
-        )
-
-    def test_add_task_generates_secuential_fulid_for_tasks(self):
-        existent_task = self.factory.create(state="open")
-        existent_task_fulid_id_number = fulid()._decode_id(existent_task.id)
-
-        first_title = "first task title"
-        self.manager.add(title=first_title)
-
-        first_generated_task = (
-            self.session.query(Task).filter_by(title=first_title).first()
-        )
-        first_generated_task_fulid_id_number = fulid()._decode_id(
-            first_generated_task.id
-        )
-
-        second_title = "second task title"
-        self.manager.add(title=second_title)
-
-        second_generated_task = (
-            self.session.query(Task).filter_by(title=second_title).first()
-        )
-        second_generated_task_fulid_id_number = fulid()._decode_id(
-            second_generated_task.id
-        )
-
-        assert first_generated_task_fulid_id_number - existent_task_fulid_id_number == 1
-        assert (
-            second_generated_task_fulid_id_number - first_generated_task_fulid_id_number
-            == 1
-        )
-
-    def test_add_task_assigns_project_if_exist(self):
-        project = ProjectFactory.create()
-        title = self.fake.sentence()
-
-        self.manager.add(title=title, project_id=project.id)
-
-        generated_task = self.session.query(Task).one()
-        assert generated_task.project is project
-
-    def test_add_task_generates_project_if_doesnt_exist(self):
-        title = self.fake.sentence()
-
-        self.manager.add(title=title, project_id="non_existent")
-
-        generated_task = self.session.query(Task).one()
-        project = self.session.query(Project).get("non_existent")
-
-        assert generated_task.project is project
-        assert isinstance(project, Project)
-
-    def test_add_task_assigns_tag_if_exist(self):
-        tag = TagFactory.create()
-        title = self.fake.sentence()
-
-        self.manager.add(title=title, tags=[tag.id])
-
-        generated_task = self.session.query(Task).one()
-        assert generated_task.tags == [tag]
-
-    def test_add_task_generates_tag_if_doesnt_exist(self):
-        title = self.fake.sentence()
-
-        self.manager.add(title=title, tags=["non_existent"])
-
-        generated_task = self.session.query(Task).one()
-        tag = self.session.query(Tag).get("non_existent")
-
-        assert generated_task.tags == [tag]
-        assert isinstance(tag, Tag)
-
-    def test_add_task_assigns_priority_if_exist(self):
-        title = self.fake.sentence()
-        priority = self.fake.random_number()
-
-        self.manager.add(title=title, priority=priority)
-
-        generated_task = self.session.query(Task).one()
-        assert generated_task.priority == priority
-
-    def test_add_task_assigns_value_if_exist(self):
-        title = self.fake.sentence()
-        value = self.fake.random_number()
-
-        self.manager.add(title=title, value=value)
-
-        generated_task = self.session.query(Task).one()
-        assert generated_task.value == value
-
-    def test_add_task_assigns_willpower_if_exist(self):
-        title = self.fake.sentence()
-        willpower = self.fake.random_number()
-
-        self.manager.add(title=title, willpower=willpower)
-
-        generated_task = self.session.query(Task).one()
-        assert generated_task.willpower == willpower
-
-    def test_add_task_assigns_fun_if_exist(self):
-        title = self.fake.sentence()
-        fun = self.fake.random_number()
-
-        self.manager.add(title=title, fun=fun)
-
-        generated_task = self.session.query(Task).one()
-        assert generated_task.fun == fun
-
-    def test_add_task_assigns_estimate_if_exist(self):
-        title = self.fake.sentence()
-        estimate = self.fake.random_number()
-
-        self.manager.add(title=title, estimate=estimate)
-
-        generated_task = self.session.query(Task).one()
-        assert generated_task.estimate == estimate
-
-    def test_add_task_assigns_body_if_exist(self):
-        title = self.fake.sentence()
-        body = self.fake.sentence()
-
-        self.manager.add(title=title, body=body)
-
-        generated_task = self.session.query(Task).one()
-        assert generated_task.body == body
-
-    def test_add_task_assigns_default_agile_state_if_not_specified(self):
-        title = self.fake.sentence()
-
-        self.manager.add(title=title)
-
-        generated_task = self.session.query(Task).one()
-        assert generated_task.agile == config.get("task.agile.default")
-
-    def test_raise_error_if_add_task_assigns_unvalid_agile_state(self):
-        title = self.fake.sentence()
-        agile = self.fake.word()
-
-        with pytest.raises(ValueError):
-            self.manager.add(title=title, agile=agile)
-
-    def test_add_task_assigns_agile_if_exist(self):
-        title = self.fake.sentence()
-        agile = "todo"
-
-        self.manager.add(title=title, agile=agile)
-
-        generated_task = self.session.query(Task).one()
-        assert generated_task.agile == agile
-
-    def test_add_task_assigns_due_if_exist(self):
-        title = self.fake.sentence()
-        due = self.fake.date_time()
-
-        self.manager.add(title=title, due=due)
-
-        generated_task = self.session.query(Task).one()
-        assert generated_task.due == due
-
-    def test_add_generates_recurrent_task_when_repeating(self):
-        title = self.fake.sentence()
-        due = self.fake.date_time()
-        recurrence = "1d"
-
-        self.manager.add(
-            title=title, due=due, recurrence=recurrence, recurrence_type="repeating"
-        )
-
-        generated_parent_task = self.session.query(RecurrentTask).one()
-        generated_child_task = self.session.query(Task).filter_by(type="task").one()
-
-        assert generated_child_task.id != generated_parent_task.id
-        assert generated_child_task.parent_id == generated_parent_task.id
-        assert generated_parent_task.recurrence == recurrence
-        assert generated_parent_task.recurrence_type == "repeating"
-        assert generated_parent_task.due == due
-        assert generated_child_task.due == due
-
-    def test_add_generates_recurrent_task_when_recurring(self):
-        title = self.fake.sentence()
-        due = self.fake.date_time()
-        recurrence = "1d"
-
-        self.manager.add(
-            title=title, due=due, recurrence=recurrence, recurrence_type="recurring"
-        )
-
-        generated_parent_task = self.session.query(RecurrentTask).one()
-        generated_child_task = self.session.query(Task).filter_by(type="task").one()
-
-        assert generated_child_task.id != generated_parent_task.id
-        assert generated_child_task.parent_id == generated_parent_task.id
-        assert generated_parent_task.recurrence == recurrence
-        assert generated_parent_task.recurrence_type == "recurring"
-        assert generated_parent_task.due == due
-        assert generated_child_task.due == due
-
-    def test_add_fails_gently_if_recurring_task_dont_have_due(self):
-        title = self.fake.sentence()
-        recurrence = "1d"
-
-        self.manager.add(
-            title=title, recurrence=recurrence, recurrence_type="recurring", due=None,
-        )
-
-        self.log.error.assert_called_once_with(
-            "You need to specify a due date for recurring tasks"
-        )
-
     def test_modify_task_modifies_arbitrary_attribute(self):
         task = self.factory.create(state="open")
         non_existent_attribute_value = self.fake.word()
@@ -1035,7 +638,7 @@ class TestTaskManager(ManagerBaseTest):
         with pytest.raises(ValueError):
             self.manager.modify(fulid().fulid_to_sulid(task.id, [task.id]), agile=agile)
 
-    def test_add_task_modifies_agile(self):
+    def test_modify_task_modifies_agile(self):
         agile = "todo"
         task = self.factory.create(state="open")
 
@@ -1045,7 +648,7 @@ class TestTaskManager(ManagerBaseTest):
 
         assert modified_task.agile == agile
 
-    def test_add_task_modifies_due(self):
+    def test_modify_task_modifies_due(self):
         due = self.fake.date_time()
         task = self.factory.create(state="open")
 
@@ -1507,7 +1110,7 @@ class TestTaskManager(ManagerBaseTest):
         assert repeatingMock.called is False
 
 
-class TestDateManager:
+class OldTestDateManager:
     """
     Class to test the DateManager class.
 
@@ -1715,3 +1318,70 @@ class TestDateManager:
         assert self.manager.convert("yesterday", starting_date) == datetime.date(
             2020, 1, 11
         )
+
+
+@pytest.mark.skip("Probably wont need it after refactor")
+class OldManagerBaseTest:
+    """
+    Abstract base test class to ensure that all the managers have the same
+    interface.
+
+    The Children classes must define the following attributes:
+        self.manager: the manager class to test.
+        self.model: the sqlalchemy model to test.
+        self.factory: a factory_boy object to create dummy objects.
+
+    Public attributes:
+        datetime (mock): datetime mock.
+        fake (Faker object): Faker object.
+        log (mock): logging mock
+        session (Session object): Database session.
+    """
+
+    @pytest.fixture(autouse=True)
+    def base_setup(self, session):
+        self.datetime_patch = patch("pydo.manager.datetime", autospect=True)
+        self.datetime = self.datetime_patch.start()
+        self.fake = Faker()
+        self.log_patch = patch("pydo.manager.log", autospect=True)
+        self.log = self.log_patch.start()
+        self.session = session
+
+        yield "base_setup"
+
+        self.datetime_patch.stop()
+        self.log_patch.stop()
+
+    def test_session_attribute_exists(self):
+        assert self.manager.session is self.session
+
+    def test_get_element(self):
+        element = self.factory.create()
+        assert self.manager._get(element.id) == element
+
+    def test_get_raises_valueerror_if_property_doesnt_exist(self):
+        with pytest.raises(ValueError):
+            self.manager._get("unexistent_property")
+
+    def test_update_table_element_method_exists(self):
+        assert "_update" in dir(self.manager)
+
+    def test_update_element(self):
+        element = self.factory.create()
+
+        attribute_value = self.fake.sentence()
+        object_values = {"arbitrary_key": attribute_value}
+        self.manager._update(element.id, object_values)
+
+        assert element.arbitrary_key == attribute_value
+
+    def test_update_raises_valueerror_if_element_doesnt_exist(self):
+        fake_element_id = self.fake.word()
+
+        with pytest.raises(ValueError):
+            self.manager._update(fake_element_id)
+
+    def test_extract_attributes(self):
+        element = self.factory.create()
+        attributes = self.manager._get_attributes(element)
+        assert attributes["id"] == element.id

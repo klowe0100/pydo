@@ -16,25 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with pydo.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+import os
+import sys
+
+from pydo import model
 from pydo.cli import load_logger, load_parser
+from pydo.config import Config
 
 log = load_logger()
 
-import os
-from pydo.configuration import Config
 
 config = Config(os.getenv("PYDO_CONFIG", "~/.local/share/pydo/config.yaml"))
 
-from pydo import model
 
 # from pydo.manager import TaskManager
 # from pydo.ops import export, install
 # from pydo.reports import TaskReport, Projects, Tags
 # from sqlalchemy.orm import sessionmaker
-
-import logging
-
-import sys
 
 
 def task_modify_commands(session, args):

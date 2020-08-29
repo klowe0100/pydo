@@ -6,9 +6,8 @@ Functions:
     load_parser: Function to define the command line arguments.
 """
 
-import logging
 import argparse
-import argcomplete
+import logging
 
 
 def load_parser():
@@ -87,7 +86,6 @@ def load_parser():
     subparser.add_parser("tags")
     subparser.add_parser("export")
 
-    argcomplete.autocomplete(parser)
     return parser
 
 
