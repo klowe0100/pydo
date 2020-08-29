@@ -1,7 +1,9 @@
 # pylint: disable=redefined-outer-name
 
+import os
 import re
-from typing import Any, List
+from shutil import copyfile
+from typing import Any, List, Optional, Set
 
 import pytest
 from sqlalchemy import create_engine
@@ -10,11 +12,12 @@ from sqlalchemy.orm import clear_mappers, sessionmaker
 from pydo import model, types
 from pydo.adapters import repository
 from pydo.adapters.orm import metadata, start_mappers
+from pydo.config import Config
 from tests import factories
 
 
 @pytest.fixture
-def in_memory_db():
+def sqlite_db():
     """ SQLite database engine creator """
     engine = create_engine("sqlite:///:memory:")
     metadata.create_all(engine)
@@ -22,35 +25,32 @@ def in_memory_db():
 
 
 @pytest.fixture
-def session(in_memory_db):
+def session(sqlite_db):
     """ SQLite session creator """
     start_mappers()
-    yield sessionmaker(bind=in_memory_db)()
+    yield sessionmaker(bind=sqlite_db)()
     clear_mappers()
 
 
-class FakeLogger(list):
-    def debug(self, message):
-        self.append(("DEBUG", message))
+@pytest.fixture()
+def config(tmpdir):
+    config_file = str(tmpdir.join("config.yaml"))
+    os.environ["PYDO_CONFIG_PATH"] = config_file
+    copyfile("assets/config.yaml", config_file)
 
-    def error(self, message):
-        self.append(("ERROR", message))
+    config = Config(config_file)
+    config.set("storage.sqlite.path", str(tmpdir.join("sqlite.db")))
+    config.save()
 
-    def info(self, message):
-        self.append(("INFO", message))
-
-
-@pytest.fixture
-def log():
-    yield FakeLogger()
+    yield config
 
 
 class FakeRepository(repository.AbstractRepository):
-    def __init__(self, session: Any = None) -> None:
-        self._project = set()
-        self._tag = set()
-        self._task = set()
-        self.session = session
+    def __init__(self, config: Config, session: Any) -> None:
+        super().__init__(config, session)
+        self._project: Set[model.Project] = set()
+        self._tag: Set[model.Tag] = set()
+        self._task: Set[model.Task] = set()
 
     def add(self, entity: types.Entity):
         if isinstance(entity, model.Project):
@@ -61,20 +61,30 @@ class FakeRepository(repository.AbstractRepository):
             self._task.add(entity)
 
     def _get_object(self, id: str, entities: types.Entities):
-        return next(entity for entity in entities if entity.id == id)
+        try:
+            return next(entity for entity in entities if entity.id == id)
+        except StopIteration:
+            return None
 
-    def _select_table(self, obj_model: types.Entity) -> List[types.Entity]:
+    def _select_table(self, obj_model: types.EntityType) -> types.Entities:
+        """
+        Method to return the list of objects matching an object model type.
+        """
+        if obj_model.__doc__ is None:
+            raise AttributeError("The model {obj_model} is not documented")
         if "project" in obj_model.__doc__:
-            return self._project
+            return list(self._project)
         elif "tag" in obj_model.__doc__:
-            return self._tag
+            return list(self._tag)
         elif "task" in obj_model.__doc__:
-            return self._task
+            return list(self._task)
+        else:
+            raise NotImplementedError
 
-    def get(self, obj_model: types.Entity, id: str) -> types.Entity:
+    def get(self, obj_model: types.EntityType, id: str) -> types.Entity:
         return self._get_object(id, self._select_table(obj_model))
 
-    def all(self, obj_model: types.Entity) -> List[types.Entity]:
+    def all(self, obj_model: types.EntityType) -> List[types.Entity]:
         """
         Method to get all items of the repository.
         """
@@ -90,8 +100,8 @@ class FakeRepository(repository.AbstractRepository):
         pass
 
     def search(
-        self, obj_model: types.Entity, field: str, value: str
-    ) -> List[types.Entity]:
+        self, obj_model: types.EntityType, field: str, value: str
+    ) -> Optional[List[types.Entity]]:
         """
         Method to search for items that match a condition.
         """
@@ -113,8 +123,8 @@ class FakeRepository(repository.AbstractRepository):
 
 
 @pytest.fixture()
-def repo():
-    return FakeRepository()
+def repo(config):
+    return FakeRepository(config, session)
 
 
 @pytest.fixture()

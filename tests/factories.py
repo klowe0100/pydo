@@ -1,9 +1,13 @@
-from pydo import config
-from pydo.fulids import fulid
-from pydo import model
+import random
 
 import factory
-import random
+
+from pydo import config, model
+from pydo.fulids import fulid
+
+
+def create_fulid():
+    return fulid().new().str
 
 
 class ProjectFactory(factory.Factory):
