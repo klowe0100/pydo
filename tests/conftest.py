@@ -9,10 +9,13 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
-from pydo import model, types
+from pydo import types
 from pydo.adapters import repository
 from pydo.adapters.orm import metadata, start_mappers
 from pydo.config import Config
+from pydo.model.project import Project
+from pydo.model.tag import Tag
+from pydo.model.task import Task
 from tests import factories
 
 
@@ -48,16 +51,16 @@ def config(tmpdir):
 class FakeRepository(repository.AbstractRepository):
     def __init__(self, config: Config, session: Any) -> None:
         super().__init__(config, session)
-        self._project: Set[model.Project] = set()
-        self._tag: Set[model.Tag] = set()
-        self._task: Set[model.Task] = set()
+        self._project: Set[Project] = set()
+        self._tag: Set[Tag] = set()
+        self._task: Set[Task] = set()
 
     def add(self, entity: types.Entity):
-        if isinstance(entity, model.Project):
+        if isinstance(entity, Project):
             self._project.add(entity)
-        elif isinstance(entity, model.Tag):
+        elif isinstance(entity, Tag):
             self._tag.add(entity)
-        elif isinstance(entity, model.Task):
+        elif isinstance(entity, Task):
             self._task.add(entity)
 
     def _get_object(self, id: str, entities: types.Entities):

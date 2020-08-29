@@ -13,9 +13,12 @@ from sqlalchemy import (
 # create_engine, \
 from sqlalchemy.orm import mapper
 
+from pydo.model.project import Project
+from pydo.model.tag import Tag
+from pydo.model.task import RecurrentTask, Task
+
 # , relationship
 
-from pydo import model
 
 metadata = MetaData()
 
@@ -71,13 +74,13 @@ tag = Table(
 
 
 def start_mappers():
-    # tasks_mapper = mapper(model.Task, tasks)
-    mapper(model.Project, project)
-    mapper(model.Tag, tag)
-    mapper(model.Task, task)
+    # tasks_mapper = mapper(Task, tasks)
+    mapper(Project, project)
+    mapper(Tag, tag)
+    mapper(Task, task)
 
-    # lines_mapper = mapper(model.OrderLine, order_lines)
-    # mapper(model.Batch, batches, properties={
+    # lines_mapper = mapper(OrderLine, order_lines)
+    # mapper(Batch, batches, properties={
     #     '_allocations': relationship(
     #         lines_mapper,
     #         secondary=allocations,

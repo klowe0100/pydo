@@ -2,8 +2,11 @@ import logging
 
 import pytest
 
-from pydo import model, services
+from pydo import services
 from pydo.fulids import fulid
+from pydo.model.project import Project
+from pydo.model.tag import Tag
+from pydo.model.task import Task
 
 
 class TestTaskAdd:
@@ -13,7 +16,7 @@ class TestTaskAdd:
         task = services.add_task(repo, task_attributes)
 
         # Ensure that the object is in the repository
-        task = repo.get(model.Task, task.id)
+        task = repo.get(Task, task.id)
 
         assert task.description == task_attributes["description"]
         assert task.state == "open"
@@ -60,7 +63,7 @@ class TestTaskAdd:
         }
 
         task = services.add_task(repo, task_attributes)
-        project = repo.get(model.Project, "non_existent")
+        project = repo.get(Project, "non_existent")
 
         assert task.project_id is project.id
         assert task.project == project
@@ -89,7 +92,7 @@ class TestTaskAdd:
         }
 
         task = services.add_task(repo, task_attributes)
-        tag = repo.get(model.Tag, "non_existent")
+        tag = repo.get(Tag, "non_existent")
 
         assert task.tags == [tag]
         assert tag.id == "non_existent"
@@ -116,8 +119,8 @@ class TestRecurrentTask:
             repo, task_attributes.copy()
         )
 
-        parent_task = repo.get(model.Task, parent_task.id)
-        child_task = repo.get(model.Task, child_task.id)
+        parent_task = repo.get(Task, parent_task.id)
+        child_task = repo.get(Task, child_task.id)
 
         assert child_task.id != parent_task.id
         assert child_task.parent_id == parent_task.id

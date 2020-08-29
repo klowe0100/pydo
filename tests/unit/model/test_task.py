@@ -1,6 +1,7 @@
 import pytest
 
-from pydo import exceptions, model
+from pydo import exceptions
+from pydo.model import task as model
 from tests import factories
 
 
@@ -104,20 +105,3 @@ class TestRecurrentTask:
 
         with pytest.raises(exceptions.TaskAttributeError):
             model.RecurrentTask(**task_attributes)
-
-
-@pytest.mark.skip("Not yet")
-def test__str2date_raises_error_if_string_unexistent(self):
-    pass
-
-
-@pytest.mark.skip("Not yet")
-@pytest.mark.usefixtures("base_setup")
-class TestProject:
-    @pytest.fixture(autouse=True)
-    def setup(self, task_attributes, faker):
-        self.dummy_instance = factories.ProjectFactory.create()
-        self.model = model.Project(
-            id=self.dummy_instance.id, description=self.dummy_instance.description,
-        )
-        self.model_attributes = ["id", "description"]

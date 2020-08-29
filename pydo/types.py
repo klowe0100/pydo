@@ -4,13 +4,13 @@ Module to gather the type hint aliases
 
 from typing import List, Optional, Type, Union
 
-from pydo import model
+from pydo.model.project import Project
+from pydo.model.tag import Tag
+from pydo.model.task import RecurrentTask, Task
 
-Entity = Union[model.Project, model.Tag, model.Task, model.RecurrentTask]
-Entities = Union[List[model.Project], List[model.Tag], List[model.Task]]
-EntityType = Union[
-    Type[model.Project], Type[model.Tag], Type[model.Task], Type[model.RecurrentTask]
-]
+Entity = Union[Project, Tag, Task, RecurrentTask]
+Entities = Union[List[Project], List[Tag], List[Task]]
+EntityType = Union[Type[Project], Type[Tag], Type[Task], Type[RecurrentTask]]
 OptionalEntities = Union[
-    Optional[List[model.Project]], Optional[List[model.Tag]], Optional[List[model.Task]]
+    Optional[List[Project]], Optional[List[Tag]], Optional[List[Task]]
 ]

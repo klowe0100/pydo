@@ -2,11 +2,11 @@
 Module to store the command line interface.
 """
 
-import datetime
 import logging
 import re
 import sys
-from typing import Dict, Tuple, Union
+from datetime import datetime
+from typing import Any, Dict, Tuple, Union
 
 import click
 from ruamel.yaml.parser import ParserError
@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
     "-c", "--config_path", help="configuration file path", envvar="PYDO_CONFIG_FILE"
 )
 @click.pass_context
-def cli(ctx, config_path):
+def cli(ctx: Any, config_path: str):
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)
     ctx.ensure_object(dict)
@@ -85,7 +85,7 @@ def _parse_task_argument(task_arg: str) -> Tuple[str, Union[str, int, float, dat
     return "title", task_arg
 
 
-def _parse_task_arguments(self, task_args: str) -> Dict:
+def _parse_task_arguments(task_args: str) -> Dict:
     """
     Parse a Taskwarrior like add query into task attributes
     """

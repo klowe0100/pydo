@@ -6,10 +6,13 @@ Classes:
     List: Class to print the list report.
 """
 
+from tabulate import tabulate
+
 from pydo import config
 from pydo.fulids import fulid
-from pydo.model import Task, Project, Tag
-from tabulate import tabulate
+from pydo.model.project import Project
+from pydo.model.tag import Tag
+from pydo.model.task import RecurrentTask, Task
 
 
 class BaseReport:

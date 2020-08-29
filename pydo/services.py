@@ -12,13 +12,15 @@ from typing import Dict, List, Tuple
 
 import alembic.config
 
-from pydo import model
 from pydo.adapters import repository
+from pydo.model.project import Project
+from pydo.model.tag import Tag
+from pydo.model.task import RecurrentTask, Task
 
 log = logging.getLogger(__name__)
 
 
-def _configure_task(repo: repository.AbstractRepository, task: model.Task) -> None:
+def _configure_task(repo: repository.AbstractRepository, task: Task) -> None:
     """
     Internal Function to configure the new task:
         * Setting task project
@@ -28,12 +30,12 @@ def _configure_task(repo: repository.AbstractRepository, task: model.Task) -> No
     set_task_tags(repo, task)
 
 
-def add_task(repo: repository.AbstractRepository, task_attributes: Dict) -> model.Task:
+def add_task(repo: repository.AbstractRepository, task_attributes: Dict) -> Task:
     """
     Function to create a new task.
     """
 
-    task = model.Task(repo.create_next_fulid(model.Task), **task_attributes)
+    task = Task(repo.create_next_fulid(Task), **task_attributes)
     _configure_task(repo, task)
 
     repo.add(task)
@@ -45,23 +47,21 @@ def add_task(repo: repository.AbstractRepository, task_attributes: Dict) -> mode
 
 def add_recurrent_task(
     repo: repository.AbstractRepository, task_attributes: Dict
-) -> Tuple[model.RecurrentTask, model.Task]:
+) -> Tuple[RecurrentTask, Task]:
     """
     Function to create a new recurring or repeating task.
 
     Returns both parent and first children tasks.
     """
 
-    parent_task = model.RecurrentTask(
-        repo.create_next_fulid(model.Task), **task_attributes
-    )
+    parent_task = RecurrentTask(repo.create_next_fulid(Task), **task_attributes)
     _configure_task(repo, parent_task)
 
     task_attributes.pop("recurrence")
     task_attributes.pop("recurrence_type")
     task_attributes["parent_id"] = parent_task.id
 
-    child_task = model.Task(repo.create_next_fulid(model.Task), **task_attributes)
+    child_task = Task(repo.create_next_fulid(Task), **task_attributes)
     child_task.parent = parent_task
     child_task.tags = parent_task.tags
     child_task.project = parent_task.project
@@ -78,7 +78,7 @@ def add_recurrent_task(
     return parent_task, child_task
 
 
-def set_task_tags(repo: repository.AbstractRepository, task: model.Task) -> None:
+def set_task_tags(repo: repository.AbstractRepository, task: Task) -> None:
     """
     Method to set the tags attribute.
 
@@ -90,12 +90,12 @@ def set_task_tags(repo: repository.AbstractRepository, task: model.Task) -> None
         return
 
     for tag_id in task.tag_ids:
-        tag = repo.get(model.Tag, tag_id)
+        tag = repo.get(Tag, tag_id)
         if tag is None:
-            tag = model.Tag(id=tag_id, description="")
+            tag = Tag(id=tag_id, description="")
             repo.add(tag)
             log.info(f"Added tag {tag.id}: {tag.description}")
-        elif not isinstance(tag, model.Tag):
+        elif not isinstance(tag, Tag):
             raise TypeError("Tried to load the wrong object as a tag")
             # commit_necessary = True
         task.tags.append(tag)
@@ -104,19 +104,19 @@ def set_task_tags(repo: repository.AbstractRepository, task: model.Task) -> None
     #     self.session.commit()
 
 
-def set_task_project(repo: repository.AbstractRepository, task: model.Task):
+def set_task_project(repo: repository.AbstractRepository, task: Task):
     """
     Function to set the project of a task.
 
     A new project will be created if it doesn't exist yet.
     """
     if task.project_id is not None:
-        project = repo.get(model.Project, task.project_id)
+        project = repo.get(Project, task.project_id)
         if project is None:
-            project = model.Project(id=task.project_id, description="")
+            project = Project(id=task.project_id, description="")
             repo.add(project)
             log.info(f"Added project {project.id}: {project.description}")
-        elif not isinstance(project, model.Project):
+        elif not isinstance(project, Project):
             raise TypeError("Tried to load the wrong object as a project")
         task.project = project
 

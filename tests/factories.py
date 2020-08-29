@@ -2,8 +2,11 @@ import random
 
 import factory
 
-from pydo import config, model
+from pydo import config
 from pydo.fulids import fulid
+from pydo.model.project import Project
+from pydo.model.tag import Tag
+from pydo.model.task import RecurrentTask, Task
 
 
 def create_fulid():
@@ -19,7 +22,7 @@ class ProjectFactory(factory.Factory):
     description = factory.Faker("sentence")
 
     class Meta:
-        model = model.Project
+        model = Project
 
 
 class TaskFactory(factory.Factory):
@@ -43,7 +46,7 @@ class TaskFactory(factory.Factory):
             return factory.Faker("date_time").generate({})
 
     class Meta:
-        model = model.Task
+        model = Task
 
 
 # class RecurrentTaskFactory(TaskFactory):
@@ -58,7 +61,7 @@ class TaskFactory(factory.Factory):
 #     type = 'recurrent_task'
 #
 #     class Meta:
-#         model = model.RecurrentTask
+#         model = RecurrentTask
 #         sqlalchemy_session_persistence = 'commit'
 
 
@@ -71,4 +74,4 @@ class TagFactory(factory.Factory):
     description = factory.Faker("sentence")
 
     class Meta:
-        model = model.Tag
+        model = Tag
