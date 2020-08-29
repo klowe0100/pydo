@@ -131,6 +131,13 @@ class TestFakeRepositoryWithOneObject:
         # Task.__eq__ only compares reference
         assert retrieved_obj.description == expected_obj.description
 
+    def test_repository_returns_None_if_no_repositoriy_matches_get(
+        self, factory, table, obj_model, insert_object, repo
+    ):
+        retrieved_obj = repo.get(obj_model, "unexistent_id")
+
+        assert retrieved_obj is None
+
 
 @pytest.mark.parametrize(
     "factory,table,obj_model,insert_objects",
