@@ -57,9 +57,8 @@ setup(
     long_description=open("README.md").read(),
     packages=find_packages(exclude=("tests",)),
     package_data={"pydo": ["migrations/*", "migrations/versions/*"]},
-    entry_points={"console_scripts": ["pydo = pydo:main"]},
     cmdclass={"install": PostInstallCommand, "egg_info": PostEggInfoCommand},
-    setup_requires=["alembic", "SQLAlchemy",],
+    setup_requires=["alembic", "SQLAlchemy"],
     install_requires=[
         "alembic",
         "Click",
@@ -68,4 +67,8 @@ setup(
         "tabulate",
         "ulid-py",
     ],
+    entry_points="""
+        [console_scripts]
+        pydo=pydo.entrypoints.cli:cli
+    """,
 )
