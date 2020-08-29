@@ -55,20 +55,17 @@ report:
     labels: [Name, Tasks, Description]
 
 task:
-  allowed_states:
-    - open
-    - deleted
-    - completed
-    - frozen
-  # Defined by the database schema. You probably don't want to touch this.
-  allowed_types:
-    - task
-    - recurrent_task
-  agile:
-    # Default task agile state.
-    default:
+  agile_default_state:
     # Agile allowed states.
-    allowed_states: [backlog, todo, doing, review, complete]
 
 # Level of logging verbosity. One of ['info', 'debug', 'warning'].
 verbose: info
+
+# Storage configuration
+storage:
+  # Type of storage. One of ['sqlite']
+  type: sqlite
+
+  # Configuration of the sqlite storage backend
+  sqlite:
+    path: ~/.local/share/pydo/sqlite.db
