@@ -21,18 +21,18 @@ def config_e2e(tmpdir_factory):
     config = Config(config_file)
     sqlite_file = str(data.join("sqlite.db"))
     config.set("storage.sqlite.path", sqlite_file)
-    config.save()
-
     os.environ["PYDO_DATABASE_URL"] = f"sqlite:///{sqlite_file}"
-    alembic_config = AlembicConfig("pydo/migrations/alembic.ini")
-    alembic_config.attributes["configure_logger"] = False
-    alembic.command.upgrade(alembic_config, "head")
+    config.save()
 
     yield config
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def runner(config_e2e):
+    alembic_config = AlembicConfig("pydo/migrations/alembic.ini")
+    alembic_config.attributes["configure_logger"] = False
+    alembic.command.upgrade(alembic_config, "head")
+
     yield CliRunner(mix_stderr=False, env={"PYDO_CONFIG_PATH": config_e2e.config_path})
 
 
@@ -41,10 +41,10 @@ class TestCli:
         config_file = tmpdir.join("config.yaml")
         config_file.write("[ invalid yaml")
 
-        result = runner.invoke(cli, ["-c", str(config_file), "add", "test"])
+        result = runner.invoke(cli, ["-c", str(config_file), "null"])
 
         assert (
-            "pydo.entrypoints.cli",
+            "pydo.entrypoints",
             logging.ERROR,
             f"Error parsing yaml of configuration file {config_file}: expected ',' or"
             " ']', but got '<stream end>'",
@@ -54,14 +54,30 @@ class TestCli:
     def test_load_handles_file_not_found(self, runner, tmpdir, caplog):
         config_file = tmpdir.join("unexistent_config.yaml")
 
-        result = runner.invoke(cli, ["-c", str(config_file), "add", "test"])
+        result = runner.invoke(cli, ["-c", str(config_file), "null"])
 
         assert (
-            "pydo.entrypoints.cli",
+            "pydo.entrypoints",
             logging.ERROR,
             f"Error opening configuration file {config_file}",
         ) in caplog.record_tuples
         assert result.exit_code == 1
+
+    def test_migrations_are_run_if_database_is_empty(self, config, caplog, tmpdir):
+        sqlite_file = str(tmpdir.join("sqlite.db"))
+        runner = CliRunner(
+            mix_stderr=False,
+            env={
+                "PYDO_CONFIG_PATH": config.config_path,
+                "PYDO_DATABASE_URL": f"sqlite:///{sqlite_file}",
+            },
+        )
+        caplog.set_level(logging.INFO, logger="alembic")
+
+        result = runner.invoke(cli, ["null"])
+
+        assert result.exit_code == 0
+        assert re.match("Running .s", caplog.records[2].msg)
 
     def test_add_simple_task(self, runner, faker, caplog):
         description = faker.sentence()
@@ -112,8 +128,13 @@ class TestCli:
         ) in caplog.record_tuples
 
     @pytest.mark.skip("Not yet")
-    def test_add_repeating_task(runner, faker):
-        pass
+    def test_add_repeating_task(self, runner, faker, caplog):
+        description = faker.sentence()
+        runner.invoke(cli, ["add", description, "due:1st", "rep:1mo"])
+        assert re.match(
+            f"Added recurring task .*: {description}", caplog.records[0].msg
+        )
+        assert re.match(f"Added first child task with id.*", caplog.records[1].msg)
 
     @pytest.mark.skip("Not yet")
     def test_add_recurring_task(runner, faker):

@@ -14,16 +14,7 @@ class PostInstallCommand(install):
 
     def run(self):
         install.run(self)
-        import pydo
 
-        pydo.main(["install"])
-
-
-class PostEggInfoCommand(egg_info):
-    """Post-installation for egg_info mode."""
-
-    def run(self):
-        egg_info.run(self)
         try:
             data_directory = os.path.expanduser("~/.local/share/pydo")
             os.makedirs(data_directory)
@@ -40,9 +31,13 @@ class PostEggInfoCommand(egg_info):
         else:
             shutil.copyfile("assets/config.yaml", config_path)
             log.info("Copied default configuration template")
-        import pydo
 
-        pydo.main(["install"])
+
+class PostEggInfoCommand(egg_info):
+    """Post-installation for egg_info mode."""
+
+    def run(self):
+        egg_info.run(self)
 
 
 __version__ = "0.1.0"
