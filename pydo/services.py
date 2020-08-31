@@ -121,7 +121,7 @@ def set_task_project(repo: repository.AbstractRepository, task: Task):
         task.project = project
 
 
-def install(session, log, data_directory="~/.local/share/pydo"):
+def apply_migrations(repo: repository.AbstractRepository):
     """
     Function to create the environment for pydo.
 
@@ -132,12 +132,6 @@ def install(session, log, data_directory="~/.local/share/pydo"):
     Returns:
         None
     """
-
-    # Create data directory
-    data_directory = os.path.expanduser(data_directory)
-    if not os.path.exists(data_directory):
-        os.makedirs(data_directory)
-        log.info("Data directory created")
 
     # Install the database schema
     pydo_dir = os.path.dirname(os.path.abspath(__file__))

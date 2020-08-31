@@ -99,7 +99,7 @@ class TestTaskAdd:
         assert (
             "pydo.services",
             logging.INFO,
-            f"Added tag {tag.id}: {tag.description}",
+            f"Added tag {tag.id}",
         ) in caplog.record_tuples
 
 
