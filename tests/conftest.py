@@ -31,9 +31,9 @@ def sqlite_db():
 @pytest.fixture
 def session(sqlite_db):
     """ SQLite session creator """
+    clear_mappers()
     start_mappers()
     yield sessionmaker(bind=sqlite_db)()
-    clear_mappers()
 
 
 @pytest.fixture()
@@ -101,6 +101,9 @@ class FakeRepository(repository.AbstractRepository):
         # They are saved when adding them, if we want to mimic the behaviour of the
         # other repositories, we should save the objects in a temporal list and move
         # them to the real set when using this method.
+        pass
+
+    def apply_migrations(self) -> None:
         pass
 
     def search(
