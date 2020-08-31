@@ -1,4 +1,8 @@
+import os
+
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from pydo.adapters import repository
 from pydo.model.project import Project
@@ -29,8 +33,23 @@ def repo_sql(config, session):
     return repository.SqlAlchemyRepository(config, session)
 
 
+class TestSQLAlchemyRepositoryWithoutSchema:
+    def test_apply_migrations_creates_schema(self, config, tmpdir):
+        sqlite_file = str(tmpdir.join("sqlite.db"))
+
+        engine = create_engine(f"sqlite:///{sqlite_file}")
+        os.environ["PYDO_DATABASE_URL"] = f"sqlite:///{sqlite_file}"
+        session = sessionmaker(bind=engine)()
+        repo = repository.SqlAlchemyRepository(config, session)
+
+        repo.apply_migrations()
+
+        rows = list(session.execute(f"SELECT * FROM alembic_version"))
+        assert len(rows) > 0
+
+
 @pytest.mark.parametrize("factory,table", add_fixtures)
-class TestSQLAlchemyRepositoryEmpty:
+class TestSQLAlchemyRepositoryWithSchema:
     def test_repository_can_add_an_object(self, factory, table, session, repo_sql):
         obj = factory.create()
 

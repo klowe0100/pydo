@@ -1,8 +1,14 @@
 import abc
+import logging
 from typing import Any, List, Union
+
+import alembic.command
+from alembic.config import Config as AlembicConfig
 
 from pydo import fulids, types
 from pydo.config import Config
+
+log = logging.getLogger(__name__)
 
 
 class AbstractRepository(abc.ABC):
@@ -20,6 +26,10 @@ class AbstractRepository(abc.ABC):
 
     @abc.abstractmethod
     def add(self, entity: types.Entity) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def apply_migrations(self) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -71,6 +81,12 @@ class SqlAlchemyRepository(AbstractRepository):
 
     def add(self, entity: types.Entity) -> None:
         self.session.add(entity)
+
+    def apply_migrations(self) -> None:
+        log.debug("Running Database Migrations")
+        alembic_config = AlembicConfig("pydo/migrations/alembic.ini")
+        alembic_config.attributes["configure_logger"] = False
+        alembic.command.upgrade(alembic_config, "head")
 
     def get(self, obj_model: types.EntityType, id: str) -> types.Entity:
         return self.session.query(obj_model).get(id)
