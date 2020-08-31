@@ -19,10 +19,15 @@ log = logging.getLogger(__name__)
 
 @click.group()
 @click.option(
-    "-c", "--config_path", help="configuration file path", envvar="PYDO_CONFIG_PATH"
+    "-c",
+    "--config_path",
+    default="~/.local/share/pydo/config.yaml",
+    help="configuration file path",
+    envvar="PYDO_CONFIG_PATH",
 )
+@click.option("-v", "--verbose", default=False)
 @click.pass_context
-def cli(ctx: Any, config_path: str) -> None:
+def cli(ctx: Any, config_path: str, verbose: bool) -> None:
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)
     ctx.ensure_object(dict)
@@ -30,6 +35,8 @@ def cli(ctx: Any, config_path: str) -> None:
     ctx.obj["config"] = _load_config(config_path)
     ctx.obj["session"] = _load_session(ctx.obj["config"])
     ctx.obj["repo"] = _load_repository(ctx.obj["config"], ctx.obj["session"])
+    ctx.obj["repo"].apply_migrations()
+    _load_logger(verbose)
 
 
 def _parse_task_argument(task_arg: str) -> Tuple[str, Union[str, int, float, datetime]]:
@@ -117,7 +124,16 @@ def add(ctx, add_args) -> None:
     except exceptions.DateParseError as e:
         log.error(str(e))
 
-    services.add_task(ctx.obj["repo"], task_attributes)
+    if task_attributes.get("recurrence_type", None) in ["recurring", "repeating"]:
+        services.add_recurrent_task(ctx.obj["repo"], task_attributes)
+    else:
+        services.add_task(ctx.obj["repo"], task_attributes)
+
+
+@cli.command()
+def null() -> None:
+    """Command that does nothing, for testing purposes."""
+    pass
 
 
 if __name__ == "__main__":
