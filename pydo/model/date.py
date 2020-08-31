@@ -8,6 +8,8 @@ from typing import Match, Optional
 from dateutil._common import weekday
 from dateutil.relativedelta import FR, MO, SA, SU, TH, TU, WE, relativedelta
 
+from pydo import exceptions
+
 
 def convert_date(human_date: str, starting_date: datetime = datetime.now()) -> datetime:
     """
@@ -93,8 +95,8 @@ def _str2date(modifier: str, starting_date: datetime = datetime.now()) -> dateti
             r"(?P<value>[0-9]+)(?P<unit>.*)", element
         )
         if element_match is None:
-            raise ValueError(
-                "Unable to parse the date string {modifier}, please enter a valid one"
+            raise exceptions.DateParseError(
+                f"Unable to parse the date string {modifier}, please enter a valid one"
             )
         value: int = int(element_match.group("value"))
         unit: str = element_match.group("unit")
@@ -140,9 +142,9 @@ def _next_weekday(
     return starting_date + date_delta
 
 
-def _next_monthday(self, months, starting_date=datetime.now()):
+def _next_monthday(months: int, starting_date: datetime = datetime.now()):
     """
-    Method to get the difference between for the next same week day of the
+    Method to get the difference between the next same week day of the
     month for the specified months.
 
     For example the difference till the next 3rd Wednesday of the month

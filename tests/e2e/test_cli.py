@@ -72,3 +72,7 @@ class TestCli:
     def test_add_task_assigns_default_agile_state_if_not_specified(faker, config):
         pass
         # assert task.agile == config.get("task.agile.default")
+
+    @pytest.mark.skip("Not yet")
+    def test_add_handles_DateParseError(faker, config):
+        pass
