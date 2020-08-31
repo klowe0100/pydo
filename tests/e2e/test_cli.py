@@ -127,10 +127,10 @@ class TestCli:
             "Unable to parse the date string invalid_date, please enter a valid one",
         ) in caplog.record_tuples
 
-    @pytest.mark.skip("Not yet")
     def test_add_repeating_task(self, runner, faker, caplog):
         description = faker.sentence()
         runner.invoke(cli, ["add", description, "due:1st", "rep:1mo"])
+        __import__("pdb").set_trace()  # XXX BREAKPOINT
         assert re.match(
             f"Added recurring task .*: {description}", caplog.records[0].msg
         )
