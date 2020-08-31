@@ -1,8 +1,8 @@
-from pydo import config
-from pydo.fulids import fulid
-
 import datetime
+
 import pytest
+
+from pydo.fulids import fulid
 
 
 class Testfulid:
@@ -32,10 +32,10 @@ class Testfulid:
             self.fulid.str
         )
 
-    def test_fulid_has_charset_attribute(self):
+    def test_fulid_has_charset_attribute(self, config):
         assert self.fulid.charset == list(config.get("fulid.characters"))
 
-    def test_fulid_has_forbidden_charset_attribute(self):
+    def test_fulid_has_forbidden_charset_attribute(self, config):
         assert self.fulid.forbidden_charset == list(
             config.get("fulid.forbidden_characters")
         )
@@ -43,10 +43,10 @@ class Testfulid:
     def test_fulid_has_fulid_attribute_none_by_default(self):
         assert self.fulid.str is None
 
-    def test_fulid_has_charset_attribute_set_by_default(self):
+    def test_fulid_has_charset_attribute_set_by_default(self, config):
         assert self.fulid.charset == list(config.get("fulid.characters"))
 
-    def test_fulid_has_forbidden_charset_attribute_set_by_default(self):
+    def test_fulid_has_forbidden_charset_attribute_set_by_default(self, config):
         assert self.fulid.forbidden_charset == list(
             config.get("fulid.forbidden_characters")
         )
@@ -79,11 +79,11 @@ class Testfulid:
         id = self.fulid.new()
         assert isinstance(id, fulid)
 
-    def test_fulid_generates_an_ulid_with_the_id_in_charset(self):
+    def test_fulid_generates_an_ulid_with_the_id_in_charset(self, config):
         for character in self.fulid.new().id():
             assert character.lower() in config.get("fulid.characters")
 
-    def test_fulid_does_not_accept_invalid_terminal_characters(self):
+    def test_fulid_does_not_accept_invalid_terminal_characters(self, config):
         with pytest.raises(ValueError):
             fulid(
                 "ilou|&:;()<>~*@?!$#[]{}\\/'\"`",
