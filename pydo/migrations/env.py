@@ -38,7 +38,7 @@ target_metadata = metadata
 def get_url():
     basedir = "~/.local/share/pydo"
     return os.environ.get("PYDO_DATABASE_URL") or "sqlite:///" + os.path.join(
-        os.path.expanduser(basedir), "main.db"
+        os.path.expanduser(basedir), "sqlite.db"
     )
 
 
