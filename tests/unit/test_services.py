@@ -71,7 +71,7 @@ class TestTaskAdd:
         assert (
             "pydo.services",
             logging.INFO,
-            f"Added project {project.id}: {project.description}",
+            f"Added project {project.id}",
         ) in caplog.record_tuples
 
     def test_add_task_assigns_tag_if_exist(self, config, repo, faker, insert_tag):

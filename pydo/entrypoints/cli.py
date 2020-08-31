@@ -4,38 +4,32 @@ Module to store the command line interface.
 
 import logging
 import re
-import sys
 from datetime import datetime
 from typing import Any, Dict, Tuple, Union
 
 import click
-from ruamel.yaml.parser import ParserError
 
-from pydo.config import Config
+from pydo import exceptions, services
+from pydo.entrypoints import _load_config, _load_logger, _load_repository, _load_session
+from pydo.model.date import convert_date
 
+_load_logger()
 log = logging.getLogger(__name__)
 
 
 @click.group()
 @click.option(
-    "-c", "--config_path", help="configuration file path", envvar="PYDO_CONFIG_FILE"
+    "-c", "--config_path", help="configuration file path", envvar="PYDO_CONFIG_PATH"
 )
 @click.pass_context
-def cli(ctx: Any, config_path: str):
+def cli(ctx: Any, config_path: str) -> None:
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)
     ctx.ensure_object(dict)
 
-    try:
-        ctx.obj["config"] = Config(config_path)
-    except ParserError as e:
-        log.error(
-            f"Error parsing yaml of configuration file {config_path}: {e.problem}"
-        )
-        sys.exit(1)
-    except FileNotFoundError:
-        log.error(f"Error opening configuration file {config_path}")
-        sys.exit(1)
+    ctx.obj["config"] = _load_config(config_path)
+    ctx.obj["session"] = _load_session(ctx.obj["config"])
+    ctx.obj["repo"] = _load_repository(ctx.obj["config"], ctx.obj["session"])
 
 
 def _parse_task_argument(task_arg: str) -> Tuple[str, Union[str, int, float, datetime]]:
@@ -57,7 +51,7 @@ def _parse_task_argument(task_arg: str) -> Tuple[str, Union[str, int, float, dat
         "project_id": {"regexp": r"^(pro|project):", "type": "str"},
         "recurring": {"regexp": r"^(rec|recurring):", "type": "str"},
         "repeating": {"regexp": r"^(rep|repeating):", "type": "str"},
-        "tags": {"regexp": r"^\+", "type": "tag"},
+        "tag_ids": {"regexp": r"^\+", "type": "tag"},
         "tags_rm": {"regexp": r"^\-", "type": "tag"},
         "value": {"regexp": r"^(vl|value):", "type": "int"},
         "willpower": {"regexp": r"^(wp|willpower):", "type": "int"},
@@ -80,9 +74,9 @@ def _parse_task_argument(task_arg: str) -> Tuple[str, Union[str, int, float, dat
             elif attribute["type"] == "date":
                 return (
                     attribute_id,
-                    self.date.convert(":".join(task_arg.split(":")[1:])),
+                    convert_date(":".join(task_arg.split(":")[1:])),
                 )
-    return "title", task_arg
+    return "description", task_arg
 
 
 def _parse_task_arguments(task_args: str) -> Dict:
@@ -90,11 +84,11 @@ def _parse_task_arguments(task_args: str) -> Dict:
     Parse a Taskwarrior like add query into task attributes
     """
 
-    task_attributes = {}
+    task_attributes: Dict = {}
 
     for task_arg in task_args:
-        attribute_id, attribute_value = self._parse_attribute(task_arg)
-        if attribute_id in ["tags", "tags_rm", "title"]:
+        attribute_id, attribute_value = _parse_task_argument(task_arg)
+        if attribute_id in ["tag_ids", "tags_rm", "description"]:
             try:
                 task_attributes[attribute_id]
             except KeyError:
@@ -107,7 +101,7 @@ def _parse_task_arguments(task_args: str) -> Dict:
             task_attributes[attribute_id] = attribute_value
 
     try:
-        task_attributes["title"] = " ".join(task_attributes["title"])
+        task_attributes["description"] = " ".join(task_attributes["description"])
     except KeyError:
         pass
 
@@ -118,7 +112,12 @@ def _parse_task_arguments(task_args: str) -> Dict:
 @click.argument("add_args", nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
 def add(ctx, add_args) -> None:
-    pass
+    try:
+        task_attributes: Dict = _parse_task_arguments(add_args)
+    except exceptions.DateParseError as e:
+        log.error(str(e))
+
+    services.add_task(ctx.obj["repo"], task_attributes)
 
 
 if __name__ == "__main__":

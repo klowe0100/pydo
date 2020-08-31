@@ -1,15 +1,39 @@
 import logging
+import os
 import re
+from shutil import copyfile
 
+import alembic.command
 import pytest
+from alembic.config import Config as AlembicConfig
 from click.testing import CliRunner
 
+from pydo.config import Config
 from pydo.entrypoints.cli import cli
 
 
+@pytest.fixture(scope="session")
+def config_e2e(tmpdir_factory):
+    data = tmpdir_factory.mktemp("data")
+    config_file = str(data.join("config.yaml"))
+    copyfile("assets/config.yaml", config_file)
+
+    config = Config(config_file)
+    sqlite_file = str(data.join("sqlite.db"))
+    config.set("storage.sqlite.path", sqlite_file)
+    config.save()
+
+    os.environ["PYDO_DATABASE_URL"] = f"sqlite:///{sqlite_file}"
+    alembic_config = AlembicConfig("pydo/migrations/alembic.ini")
+    alembic_config.attributes["configure_logger"] = False
+    alembic.command.upgrade(alembic_config, "head")
+
+    yield config
+
+
 @pytest.fixture()
-def runner(config):
-    yield CliRunner()
+def runner(config_e2e):
+    yield CliRunner(mix_stderr=False, env={"PYDO_CONFIG_PATH": config_e2e.config_path})
 
 
 class TestCli:
@@ -39,19 +63,53 @@ class TestCli:
         ) in caplog.record_tuples
         assert result.exit_code == 1
 
-    def test_add_simple_task(self, runner, faker):
+    def test_add_simple_task(self, runner, faker, caplog):
         description = faker.sentence()
         result = runner.invoke(cli, ["add", description])
         assert result.exit_code == 0
-        assert re.match(f"Added task .*: {description}", result.err)
+        assert re.match(f"Added task .*: {description}", caplog.records[0].msg)
 
-    @pytest.mark.skip("Not yet")
-    def test_add_complex_tasks(runner, faker):
+    def test_add_complex_tasks(self, runner, faker, caplog):
         description = faker.sentence()
-        # add here more arguments
-        result = runner.invoke(cli, ["add", description])
+        result = runner.invoke(
+            cli,
+            [
+                "add",
+                description,
+                "due:1mo",
+                "pri:5",
+                "agile:doing",
+                "est:3",
+                'body:"{faker.text()}"',
+            ],
+        )
         assert result.exit_code == 0
-        assert re.match(f"Added task a: {description}")
+        assert re.match(f"Added task .*: {description}", caplog.records[0].msg)
+
+    def test_add_a_task_with_an_inexistent_project(self, runner, faker, caplog):
+        description = faker.sentence()
+        project = faker.word()
+        result = runner.invoke(cli, ["add", description, f"pro:{project}"])
+        assert result.exit_code == 0
+        assert re.match(f"Added project {project}", caplog.records[0].msg)
+        assert re.match(f"Added task .*: {description}", caplog.records[1].msg)
+
+    def test_add_a_task_with_an_inexistent_tag(self, runner, faker, caplog):
+        description = faker.sentence()
+        tag = faker.word()
+        result = runner.invoke(cli, ["add", description, f"+{tag}"])
+        assert result.exit_code == 0
+        assert re.match(f"Added tag {tag}", caplog.records[0].msg)
+        assert re.match(f"Added task .*: {description}", caplog.records[1].msg)
+
+    def test_add_handles_DateParseError(self, runner, faker, caplog):
+        result = runner.invoke(cli, ["add", faker.sentence(), "due:invalid_date"])
+        assert result.exit_code == 1
+        assert (
+            "pydo.entrypoints.cli",
+            logging.ERROR,
+            "Unable to parse the date string invalid_date, please enter a valid one",
+        ) in caplog.record_tuples
 
     @pytest.mark.skip("Not yet")
     def test_add_repeating_task(runner, faker):
@@ -67,12 +125,3 @@ class TestCli:
         # self.log.error.assert_called_once_with(
         #     "You need to specify a due date for recurring tasks"
         # )
-
-    @pytest.mark.skip("Not yet")
-    def test_add_task_assigns_default_agile_state_if_not_specified(faker, config):
-        pass
-        # assert task.agile == config.get("task.agile.default")
-
-    @pytest.mark.skip("Not yet")
-    def test_add_handles_DateParseError(faker, config):
-        pass

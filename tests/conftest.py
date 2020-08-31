@@ -1,6 +1,7 @@
 # pylint: disable=redefined-outer-name
 
 import os
+import random
 import re
 from shutil import copyfile
 from typing import Any, List, Optional, Set
@@ -202,3 +203,8 @@ def insert_objects(request, session, insert_tasks, insert_tags, insert_projects)
         return insert_projects
     elif request.param == "insert_tag":
         return insert_tags
+
+
+@pytest.fixture(scope="session", autouse=True)
+def faker_seed():
+    return random.randint(0, 999999)

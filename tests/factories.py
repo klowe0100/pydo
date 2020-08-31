@@ -2,11 +2,10 @@ import random
 
 import factory
 
-from pydo import config
 from pydo.fulids import fulid
 from pydo.model.project import Project
 from pydo.model.tag import Tag
-from pydo.model.task import RecurrentTask, Task
+from pydo.model.task import Task
 
 
 def create_fulid():
@@ -28,8 +27,12 @@ class ProjectFactory(factory.Factory):
 class TaskFactory(factory.Factory):
     id = factory.LazyFunction(lambda: fulid().new().str)
     description = factory.Faker("sentence")
-    state = factory.Faker("word", ext_word_list=config.get("task.allowed_states"))
-    agile = factory.Faker("word", ext_word_list=["backlog", "todo", None])
+    state = factory.Faker(
+        "word", ext_word_list=["open", "deleted", "completed", "frozen"]
+    )
+    agile = factory.Faker(
+        "word", ext_word_list=["backlog", "todo", "doing", "review", "complete", None]
+    )
     type = "task"
     priority = factory.Faker("random_number")
 

@@ -1,21 +1,23 @@
 import pytest
 
-from pydo import model
 from pydo.adapters import repository
+from pydo.model.project import Project
+from pydo.model.tag import Tag
+from pydo.model.task import Task
 from tests import factories
 
 models_to_try_sql = [
     # factory, table, model, insert fixture
-    [factories.ProjectFactory, "project", model.Project, "insert_project_sql"],
-    [factories.TagFactory, "tag", model.Tag, "insert_tag_sql"],
-    [factories.TaskFactory, "task", model.Task, "insert_task_sql"],
+    [factories.ProjectFactory, "project", Project, "insert_project_sql"],
+    [factories.TagFactory, "tag", Tag, "insert_tag_sql"],
+    [factories.TaskFactory, "task", Task, "insert_task_sql"],
 ]
 
 models_to_try_fake = [
     # factory, table, model, insert fixture
-    [factories.ProjectFactory, "project", model.Project, "insert_project"],
-    [factories.TagFactory, "tag", model.Tag, "insert_tag"],
-    [factories.TaskFactory, "task", model.Task, "insert_task"],
+    [factories.ProjectFactory, "project", Project, "insert_project"],
+    [factories.TagFactory, "tag", Tag, "insert_tag"],
+    [factories.TaskFactory, "task", Task, "insert_task"],
 ]
 
 # We don't need the model or the insert_fixture fixtures to add objects
@@ -23,8 +25,8 @@ add_fixtures = [model_case[:2] for model_case in models_to_try_sql]
 
 
 @pytest.fixture
-def repo_sql(session):
-    return repository.SqlAlchemyRepository(session)
+def repo_sql(config, session):
+    return repository.SqlAlchemyRepository(config, session)
 
 
 @pytest.mark.parametrize("factory,table", add_fixtures)

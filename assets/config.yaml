@@ -15,16 +15,16 @@ report:
   # Configuration of the frozen report.
   frozen:
     # Ordered list of Task attributes to print.
-    columns: [id, title, recurrence, recurrence_type, project_id, priority, tags, due, parent_id]
+    columns: [id, description, recurrence, recurrence_type, project_id, priority, tags, due, parent_id]
     # Ordered list of names for the Task attributes to print.
-    labels: [ID, Title, Recurrence, Recurrence Type, Project, Pri, Tags, Due, Parent]
+    labels: [ID, Description, Recurrence, Recurrence Type, Project, Pri, Tags, Due, Parent]
 
   # Configuration of the open report.
   open:
     # Ordered list of Task attributes to print.
-    columns: [id, title, project_id, priority, tags, due]
+    columns: [id, description, project_id, priority, tags, due]
     # Ordered list of names for the Task attributes to print.
-    labels: [ID, Title, Project, Pri, Tags, Due]
+    labels: [ID, Description, Project, Pri, Tags, Due]
 
   # Configuration of the projects report.
   projects:
@@ -36,16 +36,16 @@ report:
   # Configuration of the repeating report.
   repeating:
     # Ordered list of Task attributes to print.
-    columns: [id, title, recurrence, project_id, priority, tags, due]
+    columns: [id, description, recurrence, project_id, priority, tags, due]
     # Ordered list of names for the Task attributes to print.
-    labels: [ID, Title, Recurrence, Project, Pri, Tags, Due]
+    labels: [ID, Description, Recurrence, Project, Pri, Tags, Due]
 
   # Configuration of the recurring report.
   recurring:
     # Ordered list of Task attributes to print.
-    columns: [id, title, recurrence, project_id, priority, tags, due]
+    columns: [id, description, recurrence, project_id, priority, tags, due]
     # Ordered list of names for the Task attributes to print.
-    labels: [ID, Title, Recurrence, Project, Pri, Tags, Due]
+    labels: [ID, Description, Recurrence, Project, Pri, Tags, Due]
 
   # Configuration of the projects report.
   tags:

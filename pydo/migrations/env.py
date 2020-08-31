@@ -1,12 +1,14 @@
+import os
+import sys
 from logging.config import fileConfig
+
+from alembic import context
 
 # from sqlalchemy import engine_from_config
 # from sqlalchemy import pool
 from sqlalchemy import create_engine
 
-from alembic import context
-
-import os
+from pydo.adapters.orm import metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -14,16 +16,15 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-fileConfig(config.config_file_name)
+if config.attributes.get("configure_logger", True):
+    fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
 
-import sys
 
 sys.path = ["", ".."] + sys.path[1:]
 
-from pydo.adapters.orm import metadata
 
 target_metadata = metadata
 # target_metadata = None

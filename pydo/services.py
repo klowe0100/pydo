@@ -8,7 +8,7 @@ Functions:
 
 import logging
 import os
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 import alembic.config
 
@@ -94,7 +94,7 @@ def set_task_tags(repo: repository.AbstractRepository, task: Task) -> None:
         if tag is None:
             tag = Tag(id=tag_id, description="")
             repo.add(tag)
-            log.info(f"Added tag {tag.id}: {tag.description}")
+            log.info(f"Added tag {tag.id}")
         elif not isinstance(tag, Tag):
             raise TypeError("Tried to load the wrong object as a tag")
             # commit_necessary = True
@@ -115,7 +115,7 @@ def set_task_project(repo: repository.AbstractRepository, task: Task):
         if project is None:
             project = Project(id=task.project_id, description="")
             repo.add(project)
-            log.info(f"Added project {project.id}: {project.description}")
+            log.info(f"Added project {project.id}")
         elif not isinstance(project, Project):
             raise TypeError("Tried to load the wrong object as a project")
         task.project = project

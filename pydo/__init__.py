@@ -21,19 +21,7 @@ import os
 import sys
 
 from pydo import model
-from pydo.cli import load_logger, load_parser
 from pydo.config import Config
-
-log = load_logger()
-
-
-config = Config(os.getenv("PYDO_CONFIG", "~/.local/share/pydo/config.yaml"))
-
-
-# from pydo.manager import TaskManager
-# from pydo.ops import export, install
-# from pydo.reports import TaskReport, Projects, Tags
-# from sqlalchemy.orm import sessionmaker
 
 
 def task_modify_commands(session, args):
@@ -67,8 +55,8 @@ def task_modify_commands(session, args):
 
 
 def main(argv=sys.argv[1:]):
-    parser = load_parser()
-    args = parser.parse_args(argv)
+    # parser = load_parser()
+    # args = parser.parse_args(argv)
 
     connection = model.engine.connect()
     session = sessionmaker()(bind=connection)
