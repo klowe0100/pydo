@@ -3,6 +3,7 @@ Module to store the command line interface.
 """
 
 import logging
+import sys
 from typing import Any, Dict
 
 import click
@@ -50,8 +51,13 @@ def add(ctx, add_args) -> None:
         task_attributes: Dict = _parse_task_arguments(add_args)
     except exceptions.DateParseError as e:
         log.error(str(e))
+        sys.exit(1)
 
-    services.add_task(ctx.obj["repo"], task_attributes)
+    try:
+        services.add_task(ctx.obj["repo"], task_attributes)
+    except exceptions.TaskAttributeError as e:
+        log.error(str(e))
+        sys.exit(1)
 
 
 @cli.command()
