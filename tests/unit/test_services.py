@@ -129,6 +129,8 @@ class TestRecurrentTask:
         assert parent_task.recurrence_type == task_attributes["recurrence_type"]
         assert parent_task.due == task_attributes["due"]
         assert child_task.due == task_attributes["due"]
+        assert parent_task.type == "recurrent_task"
+        assert child_task.type == "task"
         assert (
             "pydo.services",
             logging.INFO,

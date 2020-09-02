@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Iterable, List, Optional
+from typing import Any, Iterable, List, Optional
 
 from pydo import exceptions
 from pydo.model import Entity
@@ -25,9 +25,12 @@ class Task(Entity):
         estimate: Optional[int] = None,
         fun: Optional[int] = None,
         parent_id: Optional[str] = None,
+        parent: Optional[Any] = None,
         priority: Optional[int] = None,
         project_id: Optional[str] = None,
+        project: Optional[Project] = None,
         tag_ids: Optional[List[str]] = None,
+        tags: Optional[List[Tag]] = None,
         value: Optional[int] = None,
         wait: Optional[datetime] = None,
         willpower: Optional[int] = None,
@@ -46,10 +49,10 @@ class Task(Entity):
         self.value = value
         self.wait = wait
         self.willpower = willpower
-        self.project: Optional[Project] = None
-        self.parent: Optional[Task] = None
+        self.project: Optional[Project] = project
+        self.parent: Optional[Task] = parent
         self.tag_ids = tag_ids
-        self.tags: List[Tag] = []
+        self.tags: List[Tag] = tags
 
     def __repr__(self) -> str:
         return f"<Task {self.id}>"
@@ -108,7 +111,7 @@ class RecurrentTask(Task):
         recurrence_type: str,
         description: Optional[str] = None,
         state: str = "open",
-        type: str = "task",
+        type: str = "recurrent_task",
         agile: Optional[str] = None,
         body: Optional[str] = None,
         closed: Optional[datetime] = None,
@@ -125,22 +128,22 @@ class RecurrentTask(Task):
     ):
         super().__init__(
             id,
-            description,
-            state,
-            type,
-            agile,
-            body,
-            closed,
-            due,
-            estimate,
-            fun,
-            parent_id,
-            priority,
-            project_id,
-            tag_ids,
-            value,
-            wait,
-            willpower,
+            description=description,
+            state=state,
+            type=type,
+            agile=agile,
+            body=body,
+            closed=closed,
+            due=due,
+            estimate=estimate,
+            fun=fun,
+            parent_id=parent_id,
+            priority=priority,
+            project_id=project_id,
+            tag_ids=tag_ids,
+            value=value,
+            wait=wait,
+            willpower=willpower,
         )
         if due is None:
             raise exceptions.TaskAttributeError(
@@ -171,3 +174,19 @@ class RecurrentTask(Task):
             raise exceptions.TaskAttributeError(
                 "recurrence_type must be either recurring or repeating"
             )
+
+    def breed_children(self, children_id: str) -> Task:
+        """Method to create the next parent children"""
+
+        child_attributes = self.__dict__.copy()
+        child_attributes["parent_id"] = self.id
+        child_attributes["parent"] = self
+        child_attributes["type"] = "task"
+        child_attributes["agile"] = child_attributes["_agile"]
+
+        child_attributes.pop("id")
+        child_attributes.pop("_recurrence")
+        child_attributes.pop("_recurrence_type")
+        child_attributes.pop("_agile")
+
+        return Task(children_id, **child_attributes)

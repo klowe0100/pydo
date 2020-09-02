@@ -57,14 +57,7 @@ def add_recurrent_task(
     parent_task = RecurrentTask(repo.create_next_fulid(Task), **task_attributes)
     _configure_task(repo, parent_task)
 
-    task_attributes.pop("recurrence")
-    task_attributes.pop("recurrence_type")
-    task_attributes["parent_id"] = parent_task.id
-
-    child_task = Task(repo.create_next_fulid(Task), **task_attributes)
-    child_task.parent = parent_task
-    child_task.tags = parent_task.tags
-    child_task.project = parent_task.project
+    child_task = parent_task.breed_children(repo.create_next_fulid(Task))
 
     repo.add(parent_task)
     repo.add(child_task)

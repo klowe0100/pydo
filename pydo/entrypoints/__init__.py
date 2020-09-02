@@ -3,7 +3,7 @@ import os
 import re
 import sys
 from datetime import datetime
-from typing import Any, Tuple, Union
+from typing import Any, Dict, Tuple, Union
 
 from ruamel.yaml.parser import ParserError
 from sqlalchemy import create_engine
