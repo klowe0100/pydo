@@ -8,8 +8,10 @@ import pytest
 from alembic.config import Config as AlembicConfig
 from click.testing import CliRunner
 
+from pydo.adapters import repository
 from pydo.config import Config
 from pydo.entrypoints.cli import cli
+from tests import factories
 
 
 @pytest.fixture(scope="session")
@@ -156,9 +158,33 @@ class TestCliAdd:
         )
 
 
-# @pytest.mark.skip("Not yet")
-# class TestMain:
-#
+@pytest.fixture()
+def insert_task(config_e2e, session):
+    repo = repository.SqlAlchemyRepository(config_e2e, session)
+    task = factories.TaskFactory.create()
+    repo.add(task)
+    repo.commit()
+    return task
+
+
+class TestCliDone:
+    def test_do_subcommand_completes_task(self, runner, faker, caplog, insert_task):
+        task = insert_task
+        result = runner.invoke(cli, ["do", "a"])
+        assert result.exit_code == 0
+        assert re.match(
+            f"Completed task {task.id}: {task.description}", caplog.records[0].msg
+        )
+
+    @pytest.mark.skip("Not yet")
+    def test_do_does_nothing_if_empty_filter(self, runner, faker, caplog):
+        pass
+
+    @pytest.mark.skip("Not yet")
+    def test_do_subcommand_completes_several_tasks(self, runner, faker, caplog):
+        pass
+
+
 #     def test_done_subcommand_completes_task(self):
 #         arguments = ["done", ulid.new().str]
 #         self.parser_args.subcommand = arguments[0]
@@ -182,6 +208,10 @@ class TestCliAdd:
 #         self.tm.return_value.complete.assert_called_once_with(
 #             id=arguments[1], parent=True,
 #         )
+#
+
+# @pytest.mark.skip("Not yet")
+# class TestMain:
 #
 #     def test_delete_subcommand_deletes_task(self):
 #         arguments = ["del", ulid.new().str]
@@ -453,20 +483,6 @@ class TestCliAdd:
 #         assert parsed.parent is True
 #         assert parsed.ulid == arguments[2]
 #         assert parsed.modify_argument == [arguments[3]]
-#
-#     def test_can_specify_done_subcommand(self):
-#         arguments = ["done", ulid.new().str]
-#         parsed = self.parser.parse_args(arguments)
-#         assert parsed.subcommand == arguments[0]
-#         assert parsed.ulid == arguments[1]
-#         assert parsed.parent is False
-#
-#     def test_can_specify_parent_in_done_subcommand(self):
-#         arguments = ["done", "-p", ulid.new().str]
-#         parsed = self.parser.parse_args(arguments)
-#         assert parsed.subcommand == arguments[0]
-#         assert parsed.parent is True
-#         assert parsed.ulid == arguments[2]
 #
 #     def test_can_specify_delete_subcommand(self):
 #         arguments = ["del", ulid.new().str]

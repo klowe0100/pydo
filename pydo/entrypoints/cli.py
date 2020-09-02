@@ -44,7 +44,7 @@ def cli(ctx: Any, config_path: str, verbose: bool) -> None:
 
 
 @cli.command(context_settings=dict(ignore_unknown_options=True,))
-@click.argument("add_args", nargs=-1, type=click.UNPROCESSED)
+@click.argument("task_args", nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
 def add(ctx, add_args) -> None:
     try:
@@ -58,6 +58,13 @@ def add(ctx, add_args) -> None:
     except exceptions.TaskAttributeError as e:
         log.error(str(e))
         sys.exit(1)
+
+
+@cli.command(context_settings=dict(ignore_unknown_options=True,))
+@click.argument("task_filter", nargs=-1, type=click.UNPROCESSED)
+@click.pass_context
+def do(ctx, task_filter) -> None:
+    services.do_task(ctx.obj["repo"], task_filter)
 
 
 @cli.command()
