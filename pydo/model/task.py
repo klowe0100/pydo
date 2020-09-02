@@ -52,6 +52,8 @@ class Task(Entity):
         self.project: Optional[Project] = project
         self.parent: Optional[Task] = parent
         self.tag_ids = tag_ids
+        if tags is None:
+            tags = []
         self.tags: List[Tag] = tags
 
     def __repr__(self) -> str:
@@ -182,11 +184,15 @@ class RecurrentTask(Task):
         child_attributes["parent_id"] = self.id
         child_attributes["parent"] = self
         child_attributes["type"] = "task"
-        child_attributes["agile"] = child_attributes["_agile"]
+        try:
+            child_attributes["agile"] = child_attributes["_agile"]
+            child_attributes.pop("_agile")
+        except KeyError:
+            # SQLAlchemy messes up the object __dict__ -.-
+            child_attributes.pop("_sa_instance_state")
 
         child_attributes.pop("id")
         child_attributes.pop("_recurrence")
         child_attributes.pop("_recurrence_type")
-        child_attributes.pop("_agile")
 
         return Task(children_id, **child_attributes)

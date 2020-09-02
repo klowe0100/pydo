@@ -7,6 +7,7 @@ import alembic.command
 import pytest
 from alembic.config import Config as AlembicConfig
 from click.testing import CliRunner
+from sqlalchemy.orm import clear_mappers
 
 from pydo.config import Config
 from pydo.entrypoints.cli import cli
@@ -135,9 +136,13 @@ class TestCli:
         )
         assert re.match(f"Added first child task with id.*", caplog.records[1].msg)
 
-    @pytest.mark.skip("Not yet")
-    def test_add_recurring_task(self, runner, faker):
-        pass
+    def test_add_recurring_task(self, runner, faker, caplog):
+        description = faker.sentence()
+        runner.invoke(cli, ["add", description, "due:1st", "rec:1mo"])
+        assert re.match(
+            f"Added recurring task .*: {description}", caplog.records[0].msg
+        )
+        assert re.match(f"Added first child task with id.*", caplog.records[1].msg)
 
     @pytest.mark.skip("Not yet")
     def test_add_recurrent_task_fails_gently_if_recurring_task_dont_have_due(self):

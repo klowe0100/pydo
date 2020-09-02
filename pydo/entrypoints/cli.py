@@ -51,10 +51,7 @@ def add(ctx, add_args) -> None:
     except exceptions.DateParseError as e:
         log.error(str(e))
 
-    if task_attributes.get("recurrence_type", None) in ["recurring", "repeating"]:
-        services.add_recurrent_task(ctx.obj["repo"], task_attributes)
-    else:
-        services.add_task(ctx.obj["repo"], task_attributes)
+    services.add_task(ctx.obj["repo"], task_attributes)
 
 
 @cli.command()

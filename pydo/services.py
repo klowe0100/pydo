@@ -8,7 +8,7 @@ Functions:
 
 import logging
 import os
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 import alembic.config
 
@@ -30,9 +30,11 @@ def _configure_task(repo: repository.AbstractRepository, task: Task) -> None:
     set_task_tags(repo, task)
 
 
-def add_task(repo: repository.AbstractRepository, task_attributes: Dict) -> Task:
+def _add_simple_task(
+    repo: repository.AbstractRepository, task_attributes: Dict
+) -> Task:
     """
-    Function to create a new task.
+    Function to create a new simple task.
     """
 
     task = Task(repo.create_next_fulid(Task), **task_attributes)
@@ -40,12 +42,13 @@ def add_task(repo: repository.AbstractRepository, task_attributes: Dict) -> Task
 
     repo.add(task)
     repo.commit()
+
     log.info(f"Added task {task.id}: {task.description}")
 
     return task
 
 
-def add_recurrent_task(
+def _add_recurrent_task(
     repo: repository.AbstractRepository, task_attributes: Dict
 ) -> Tuple[RecurrentTask, Task]:
     """
@@ -56,12 +59,12 @@ def add_recurrent_task(
 
     parent_task = RecurrentTask(repo.create_next_fulid(Task), **task_attributes)
     _configure_task(repo, parent_task)
-
     child_task = parent_task.breed_children(repo.create_next_fulid(Task))
 
     repo.add(parent_task)
     repo.add(child_task)
     repo.commit()
+
     log.info(
         f"Added {parent_task.recurrence_type} task {parent_task.id}:"
         f" {parent_task.description}"
@@ -69,6 +72,21 @@ def add_recurrent_task(
     log.info(f"Added first child task with id {child_task.id}")
 
     return parent_task, child_task
+
+
+def add_task(
+    repo: repository.AbstractRepository, task_attributes: Dict
+) -> Union[Tuple[RecurrentTask, Task], Task]:
+    """
+    Function to create a new task.
+
+    It returns the created task and None if its simple, and the RecurrentTask and the
+    first child task if it's recurring or repeating.
+    """
+    if task_attributes.get("recurrence_type", None) in ["recurring", "repeating"]:
+        return _add_recurrent_task(repo, task_attributes)
+    else:
+        return _add_simple_task(repo, task_attributes)
 
 
 def set_task_tags(repo: repository.AbstractRepository, task: Task) -> None:

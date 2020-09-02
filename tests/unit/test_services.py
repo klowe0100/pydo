@@ -10,7 +10,7 @@ from pydo.model.task import Task
 
 
 class TestTaskAdd:
-    def test_add_task(self, config, repo, faker, caplog):
+    def test_add_can_create_simple_task(self, config, repo, faker, caplog):
         task_attributes = {"description": faker.sentence()}
 
         task = services.add_task(repo, task_attributes)
@@ -27,7 +27,7 @@ class TestTaskAdd:
             f"Added task {task.id}: {task.description}",
         ) in caplog.record_tuples
 
-    def test_add_task_generates_secuential_fulid_for_tasks(
+    def test_add_generates_secuential_fulid_for_tasks(
         self, repo, config, faker, insert_task
     ):
         existent_task = insert_task
@@ -44,9 +44,7 @@ class TestTaskAdd:
         assert first_task_fulid_id_number - existent_task_fulid_id_number == 1
         assert second_task_fulid_id_number - first_task_fulid_id_number == 1
 
-    def test_add_task_assigns_project_if_exist(
-        self, config, repo, faker, insert_project
-    ):
+    def test_add_assigns_project_if_exist(self, config, repo, faker, insert_project):
         project = insert_project
         task_attributes = {"description": faker.sentence(), "project_id": project.id}
 
@@ -54,9 +52,7 @@ class TestTaskAdd:
 
         assert task.project is project
 
-    def test_add_task_generates_project_if_doesnt_exist(
-        self, config, repo, faker, caplog
-    ):
+    def test_add_generates_project_if_doesnt_exist(self, config, repo, faker, caplog):
         task_attributes = {
             "description": faker.sentence(),
             "project_id": "non_existent",
@@ -74,7 +70,7 @@ class TestTaskAdd:
             f"Added project {project.id}",
         ) in caplog.record_tuples
 
-    def test_add_task_assigns_tag_if_exist(self, config, repo, faker, insert_tag):
+    def test_add_assigns_tag_if_exist(self, config, repo, faker, insert_tag):
         existent_tag = insert_tag
         task_attributes = {
             "description": faker.sentence(),
@@ -85,7 +81,7 @@ class TestTaskAdd:
 
         assert task.tags == [existent_tag]
 
-    def test_add_task_generates_tag_if_doesnt_exist(self, config, repo, faker, caplog):
+    def test_add_generates_tag_if_doesnt_exist(self, config, repo, faker, caplog):
         task_attributes = {
             "description": faker.sentence(),
             "tag_ids": ["non_existent"],
@@ -102,9 +98,7 @@ class TestTaskAdd:
             f"Added tag {tag.id}",
         ) in caplog.record_tuples
 
-
-@pytest.mark.parametrize("recurrence_type", ["recurring", "repeating"])
-class TestRecurrentTask:
+    @pytest.mark.parametrize("recurrence_type", ["recurring", "repeating"])
     def test_add_generates_recurrent_tasks(
         self, config, repo, faker, caplog, recurrence_type
     ):
@@ -113,11 +107,10 @@ class TestRecurrentTask:
             "due": faker.date_time(),
             "recurrence": "1d",
             "recurrence_type": recurrence_type,
+            "agile": "todo",
         }
 
-        parent_task, child_task = services.add_recurrent_task(
-            repo, task_attributes.copy()
-        )
+        parent_task, child_task = services.add_task(repo, task_attributes.copy())
 
         parent_task = repo.get(Task, parent_task.id)
         child_task = repo.get(Task, child_task.id)
