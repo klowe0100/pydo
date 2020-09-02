@@ -130,18 +130,17 @@ class TestCli:
     def test_add_repeating_task(self, runner, faker, caplog):
         description = faker.sentence()
         runner.invoke(cli, ["add", description, "due:1st", "rep:1mo"])
-        __import__("pdb").set_trace()  # XXX BREAKPOINT
         assert re.match(
-            f"Added recurring task .*: {description}", caplog.records[0].msg
+            f"Added repeating task .*: {description}", caplog.records[0].msg
         )
         assert re.match(f"Added first child task with id.*", caplog.records[1].msg)
 
     @pytest.mark.skip("Not yet")
-    def test_add_recurring_task(runner, faker):
+    def test_add_recurring_task(self, runner, faker):
         pass
 
     @pytest.mark.skip("Not yet")
-    def test_add_recurrent_task_fails_gently_if_recurring_task_dont_have_due():
+    def test_add_recurrent_task_fails_gently_if_recurring_task_dont_have_due(self):
         pass
         # self.log.error.assert_called_once_with(
         #     "You need to specify a due date for recurring tasks"
