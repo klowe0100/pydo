@@ -181,7 +181,7 @@ class TestConvertDate:
 
     def test_if_convert_date_accepts_combination_of_strings(self):
         starting_date = date(2020, 1, 7)
-        assert convert_date("1d 1mo 1y", starting_date) == date(2021, 2, 8)
+        assert convert_date("1d1mo1y", starting_date) == date(2021, 2, 8)
 
     def test_convert_date_raises_error_if_wrong_format(self):
         with pytest.raises(exceptions.DateParseError):

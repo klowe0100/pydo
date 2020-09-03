@@ -7,10 +7,8 @@ Functions:
 """
 
 import logging
-import os
-from typing import Dict, Tuple, Union
-
-import alembic.config
+from datetime import datetime
+from typing import Dict, Optional, Tuple, Union
 
 from pydo.adapters import repository
 from pydo.model.project import Project
@@ -37,7 +35,7 @@ def _add_simple_task(
     Function to create a new simple task.
     """
 
-    task = Task(repo.create_next_fulid(Task), **task_attributes)
+    task = Task(repo.create_next_id(Task), **task_attributes)
     _configure_task(repo, task)
 
     repo.add(task)
@@ -57,9 +55,9 @@ def _add_recurrent_task(
     Returns both parent and first children tasks.
     """
 
-    parent_task = RecurrentTask(repo.create_next_fulid(Task), **task_attributes)
+    parent_task = RecurrentTask(repo.create_next_id(Task), **task_attributes)
     _configure_task(repo, parent_task)
-    child_task = parent_task.breed_children(repo.create_next_fulid(Task))
+    child_task = parent_task.breed_children(repo.create_next_id(Task))
 
     repo.add(parent_task)
     repo.add(child_task)
@@ -132,29 +130,50 @@ def set_task_project(repo: repository.AbstractRepository, task: Task):
         task.project = project
 
 
-def apply_migrations(repo: repository.AbstractRepository):
-    """
-    Function to create the environment for pydo.
+def _close_task(
+    repo: repository.AbstractRepository,
+    short_id: str,
+    state: str,
+    close_date: Optional[datetime] = None,
+    delete_parent: bool = False,
+):
+    task_id = repo.short_id_to_id(short_id, Task)
+    task = repo.get(Task, task_id)
+    if not isinstance(task, Task):
+        raise TypeError("Trying to close a task, but the object is a {task}")
 
-    Arguments:
-        session (session object): Database session
-        log (logging object): log handler
+    task.close(state, close_date)
+    repo.add(task)
+    repo.commit()
+    log.info(f"Closed task {task.id}: {task.description} with state {state}")
 
-    Returns:
-        None
-    """
+    if delete_parent:
+        if task.parent is not None:
+            task.parent.close(state, close_date)
+            repo.add(task)
+            repo.commit()
+            log.info(
+                f"Closed parent task {task.id}: {task.description} with state {state}"
+            )
+        else:
+            raise ValueError(f"Task {task.id} doesn't have a parent task")
+    else:
+        if task.parent is not None and isinstance(task.parent, RecurrentTask):
+            new_child_task = task.parent.breed_children(repo.create_next_id(Task))
+            repo.add(new_child_task)
+            repo.commit()
+            log.info(
+                f"Added child task {new_child_task.id}: {new_child_task.description}",
+            )
 
-    # Install the database schema
-    pydo_dir = os.path.dirname(os.path.abspath(__file__))
 
-    alembic_args = [
-        "-c",
-        os.path.join(pydo_dir, "migrations/alembic.ini"),
-        "upgrade",
-        "head",
-    ]
-    alembic.config.main(argv=alembic_args)
-    log.info("Database initialized")
+def do_task(
+    repo: repository.AbstractRepository,
+    short_id: str,
+    complete_date: Optional[datetime] = None,
+    delete_parent: bool = False,
+) -> None:
+    _close_task(repo, short_id, "completed", complete_date, delete_parent)
 
 
 # import json

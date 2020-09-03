@@ -158,6 +158,27 @@ class TestCliAdd:
         )
 
 
+@pytest.mark.skip("Not yet")
+class TestCliDo:
+    def test_do_task_by_short_id(self, repo, insert_task, freezer, caplog):
+        pass
+
+    def test_do_task_with_complete_date(self, repo, insert_task, caplog):
+        pass
+
+
+#     @patch("pydo.manager.TaskManager._get_fulid")
+#     def test_complete_task_by_fulid_gives_nice_error_if_unexistent(self, mock):
+#         mock.side_effect = KeyError("No fulid was found with that sulid")
+#
+#         self.manager.complete("non_existent_id")
+#
+#         self.log.error.assert_called_once_with("There is no task with that id")
+#
+#     def test_date_manager_loaded_in_attribute(self):
+#         assert isinstance(self.manager.date, DateManager)
+
+
 @pytest.fixture()
 def insert_task(config_e2e, session):
     repo = repository.SqlAlchemyRepository(config_e2e, session)
@@ -167,6 +188,7 @@ def insert_task(config_e2e, session):
     return task
 
 
+@pytest.mark.skip("Not yet")
 class TestCliDone:
     def test_do_subcommand_completes_task(self, runner, faker, caplog, insert_task):
         task = insert_task

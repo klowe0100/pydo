@@ -46,9 +46,9 @@ def cli(ctx: Any, config_path: str, verbose: bool) -> None:
 @cli.command(context_settings=dict(ignore_unknown_options=True,))
 @click.argument("task_args", nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
-def add(ctx, add_args) -> None:
+def add(ctx, task_args) -> None:
     try:
-        task_attributes: Dict = _parse_task_arguments(add_args)
+        task_attributes: Dict = _parse_task_arguments(task_args)
     except exceptions.DateParseError as e:
         log.error(str(e))
         sys.exit(1)

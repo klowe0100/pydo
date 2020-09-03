@@ -6,7 +6,7 @@ from tests import factories
 @pytest.fixture(name="insert_task_sql")
 def insert_task_sql_(session):
     def insert_task_sql(session):
-        task = factories.TaskFactory.create()
+        task = factories.TaskFactory.create(state="open")
 
         session.execute(
             "INSERT INTO task (id, description, state, type)"
@@ -23,11 +23,11 @@ def insert_task_sql_(session):
 @pytest.fixture(name="insert_project_sql")
 def insert_project_sql_(session):
     def insert_project_sql(session):
-        project = factories.ProjectFactory.create()
+        project = factories.ProjectFactory.create(state="open")
 
         session.execute(
-            "INSERT INTO project (id, description)"
-            f'VALUES ("{project.id}", "{project.description}")'
+            "INSERT INTO project (id, description, state)"
+            f'VALUES ("{project.id}", "{project.description}", "{project.state}")'
         )
 
         return project
@@ -38,10 +38,11 @@ def insert_project_sql_(session):
 @pytest.fixture(name="insert_tag_sql")
 def insert_tag_sql_(session):
     def insert_tag_sql(session):
-        tag = factories.TagFactory.create()
+        tag = factories.TagFactory.create(state="open")
 
         session.execute(
-            f'INSERT INTO tag (id, description)VALUES ("{tag.id}", "{tag.description}")'
+            f'INSERT INTO tag (id, description, state) VALUES ("{tag.id}",'
+            f' "{tag.description}", "{tag.state}")'
         )
 
         return tag

@@ -5,8 +5,9 @@ from typing import Any, List, Union
 import alembic.command
 from alembic.config import Config as AlembicConfig
 
-from pydo import fulids, types
+from pydo import exceptions, fulids, types
 from pydo.config import Config
+from pydo.model.task import Task
 
 log = logging.getLogger(__name__)
 
@@ -33,11 +34,11 @@ class AbstractRepository(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get(self, obj_model: types.EntityType, id: str) -> types.Entity:
+    def get(self, entity_model: types.EntityType, entity_id: str) -> types.Entity:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, obj_model: types.EntityType) -> List[types.Entity]:
+    def all(self, entity_model: types.EntityType) -> List[types.Entity]:
         """
         Method to get all items of the repository.
         """
@@ -52,27 +53,52 @@ class AbstractRepository(abc.ABC):
 
     @abc.abstractmethod
     def search(
-        self, obj_model: types.EntityType, field: str, value: str
+        self, entity_model: types.EntityType, field: str, value: str
     ) -> Union[List[types.Entity], None]:
         """
         Method to search for items that match a condition.
         """
         raise NotImplementedError
 
-    def create_next_fulid(self, entity_type: types.EntityType) -> str:
+    def create_next_id(self, entity_model: types.EntityType) -> str:
         """
-        Method to create the next entity's fulid.
+        Method to create the next entity's id.
         """
 
-        matching_entities = self.search(entity_type, "state", "open")
+        matching_entities = self.search(entity_model, "state", "open")
 
         if matching_entities is None:
-            last_fulid = None
+            last_id = None
         else:
             last_entity = max(matching_entities)
-            last_fulid = last_entity.id
+            last_id = last_entity.id
 
-        return self.fulid.new(last_fulid).str
+        return self.fulid.new(last_id).str
+
+    def short_id_to_id(
+        self, short_id: str, entity_model: types.EntityType, state: str = "open"
+    ) -> str:
+        """
+        Method to create the next entity's id.
+        """
+        if len(short_id) < 10:
+            matching_entities = self.search(entity_model, "state", state)
+            if matching_entities is None:
+                raise exceptions.EntityNotFoundError(
+                    f"There are no {state} {entity_model}s"
+                )
+
+            entity_ids = [entity.id for entity in matching_entities]
+            try:
+                entity_id = self.fulid.sulid_to_fulid(short_id, entity_ids)
+            except KeyError:
+                raise exceptions.EntityNotFoundError(
+                    f"There is no {state} {entity_model} with short_id {short_id}"
+                )
+        else:
+            entity_id = short_id
+
+        return entity_id
 
 
 class SqlAlchemyRepository(AbstractRepository):
@@ -88,14 +114,16 @@ class SqlAlchemyRepository(AbstractRepository):
         alembic_config.attributes["configure_logger"] = False
         alembic.command.upgrade(alembic_config, "head")
 
-    def get(self, obj_model: types.EntityType, id: str) -> types.Entity:
-        return self.session.query(obj_model).get(id)
+    def get(self, entity_model: types.EntityType, entity_id: str) -> types.Entity:
+        if entity_model == Task:
+            entity_id = self.short_id_to_id(entity_id, entity_model)
+        return self.session.query(entity_model).get(entity_id)
 
-    def all(self, obj_model: types.EntityType) -> List[types.Entity]:
+    def all(self, entity_model: types.EntityType) -> List[types.Entity]:
         """
         Method to get all items of the repository.
         """
-        return self.session.query(obj_model).all()
+        return self.session.query(entity_model).all()
 
     def commit(self) -> None:
         """
@@ -104,15 +132,15 @@ class SqlAlchemyRepository(AbstractRepository):
         self.session.commit()
 
     def search(
-        self, obj_model: types.EntityType, field: str, value: str
+        self, entity_model: types.EntityType, field: str, value: str
     ) -> Union[List[types.Entity], None]:
         """
         Method to search for items that match a condition.
         """
         try:
             result = (
-                self.session.query(obj_model)
-                .filter(getattr(obj_model, field).like(f"%{value}"))
+                self.session.query(entity_model)
+                .filter(getattr(entity_model, field).like(f"%{value}"))
                 .all()
             )
         except AttributeError:

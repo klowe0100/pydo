@@ -78,22 +78,6 @@ class TableManager:
         else:
             return table_element
 
-    def _get_attributes(self, model):
-        """
-        Method to extract the object attributes to a dictionary.
-
-        Arguments:
-            model(SQLAlchemy): Object to extract attributes.
-
-        Returns:
-            attributes (dict): object attributes.
-        """
-
-        return {
-            column_name: getattr(model, column_name)
-            for column_name in model.__mapper__.attrs.keys()
-        }
-
     def _update(self, id, object_values=None):
         """
         Method to update an existing table item
@@ -170,27 +154,8 @@ class TaskManager(TableManager):
         super().__init__(session, Task)
         self.recurrence = TableManager(session, RecurrentTask)
 
-    def _get_fulid(self, id, state="open"):
-        """
-        Method to get the task's fulid if necessary.
-
-        Arguments:
-            id (str): Ulid of the task.
-            state (str): Task status.
-
-        Returns:
-            fulid (str): fulid that matches the sulid.
-        """
-        fulid = id
-        if len(id) < 10:
-            tasks = self.session.query(Task).filter_by(state=state)
-            task_fulids = [task.id for task in tasks]
-            try:
-                fulid = self.fulid.sulid_to_fulid(id, task_fulids)
-            except KeyError:
-                log.error("There is no {} task with fulid {}".format(state, fulid,))
-
-        return fulid
+    # def _get_fulid(self, id, state="open"):
+    #      == repo.short_id_to_id
 
     def _generate_children_attributes(self, parent_task):
         """
@@ -267,47 +232,6 @@ class TaskManager(TableManager):
 
         return fulid, task_attributes
 
-    def add(self, title, project_id=None, tags=[], agile=None, **kwargs):
-        """
-        Use parent method to create a new task.
-
-        Arguments:
-            title (str): Title of the task.
-            project_id (str): Project id.
-            tags (list): List of tag ids.
-            agile (str): Task agile state.
-            **kwargs: (object) Other attributes (key: value).
-        """
-
-        fulid, task_attributes = self._set(
-            project_id=project_id,
-            tags=tags,
-            agile=agile,
-            title=title,
-            state="open",
-            **kwargs,
-        )
-
-        if "recurrence" in task_attributes:
-            if task_attributes["due"] is None:
-                log.error(
-                    "You need to specify a due date for {} tasks".format(
-                        task_attributes["recurrence_type"]
-                    )
-                )
-            parent_id = self._create_next_fulid().str
-            self.recurrence._add(
-                parent_id, task_attributes,
-            )
-
-            task_attributes.pop("recurrence")
-            task_attributes.pop("recurrence_type")
-            task_attributes["parent_id"] = parent_id
-
-        self._add(
-            self._create_next_fulid().str, task_attributes,
-        )
-
     def modify(self, id, project_id=None, tags=[], tags_rm=[], agile=None, **kwargs):
         """
         Use parent method to modify an existing task.
@@ -344,38 +268,6 @@ class TaskManager(TableManager):
         else:
             self.modify(child_task.parent_id, **kwargs)
 
-    def _close(self, id, state, parent):
-        """
-        Method to close a task
-
-        Arguments:
-            id (str): Ulid of the task
-            state (str): State of the task once it's closed
-            parent (bool): Also delete parent task
-        """
-
-        try:
-            id = self._get_fulid(id)
-        except KeyError:
-            log.error("There is no task with that id")
-            return
-
-        task = self.session.query(Task).get(id)
-
-        task.state = state
-        task.closed = datetime.datetime.now()
-
-        if parent:
-            if task.parent_id is None:
-                log.error("Task {} doesn't have a parent task".format(task.id))
-            else:
-                self._close(task.parent_id, state=state, parent=False)
-        elif task.parent_id is not None:
-            self._close_children_hook(task)
-
-        self.session.commit()
-        log.debug("{} task {}: {}".format(state.title(), task.id, task.title))
-
     def _close_children_hook(self, task):
         """
         Method to call different hooks for each parent type once a children
@@ -390,57 +282,6 @@ class TaskManager(TableManager):
             elif task.parent.recurrence_type == "repeating":
                 self._spawn_next_repeating(task.parent)
 
-    def _spawn_next_recurring(self, parent_task):
-        """
-        Method to spawn the next recurring children task.
-
-        Arguments:
-            parent_task (RecurrentTask):
-        """
-        now = datetime.datetime.now()
-
-        child_attributes = self._generate_children_attributes(parent_task)
-
-        last_due = parent_task.due
-
-        while True:
-            next_due = self.date.convert(parent_task.recurrence, last_due)
-            if next_due > now:
-                break
-            last_due = next_due
-
-        child_attributes["due"] = next_due
-        self._add(
-            child_attributes["id"], child_attributes,
-        )
-
-        # Assign parent. It seems that specifying it in the child_attributes
-        # is not enough.
-
-        child_task = self.session.query(Task).get(child_attributes["id"])
-        child_task.parent_id = child_attributes["parent_id"]
-
-    def _spawn_next_repeating(self, parent_task):
-        """
-        Method to spawn the next repeating children task.
-
-        Arguments:
-            parent_task (RecurrentTask):
-        """
-        now = datetime.datetime.now()
-
-        child_attributes = self._generate_children_attributes(parent_task)
-        child_attributes["due"] = self.date.convert(parent_task.recurrence, now,)
-        self._add(
-            child_attributes["id"], child_attributes,
-        )
-
-        # Assign parent. It seems that specifying it in the child_attributes
-        # is not enough.
-
-        child_task = self.session.query(Task).get(child_attributes["id"])
-        child_task.parent_id = child_attributes["parent_id"]
-
     def delete(self, id, parent=False):
         """
         Method to delete a task
@@ -451,17 +292,6 @@ class TaskManager(TableManager):
         """
 
         self._close(id, "deleted", parent)
-
-    def complete(self, id, parent=False):
-        """
-        Method to complete a task
-
-        Arguments:
-            id (str): Ulid of the task
-            parent (bool): Also delete parent task (False by default)
-        """
-
-        self._close(id, "completed", parent)
 
     def freeze(self, id, parent=False):
         """

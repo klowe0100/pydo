@@ -3,5 +3,6 @@ pip-tools
 factory_boy
 pytest
 pytest-cov
+pytest-freezegun
 pre-commit
 mypy

@@ -78,7 +78,7 @@ class fulid:
             id = self._encode_id(self._decode_id(last_fulid.id()) + 1, pad=7,)
 
         self.str = "".join(
-            [temp_ulid.timestamp().str, temp_ulid.randomness().str[:9], id,]
+            [temp_ulid.timestamp().str, temp_ulid.randomness().str[:9], id]
         )
 
         return fulid(self.charset, self.forbidden_charset, self.str)
@@ -229,7 +229,7 @@ class fulid:
         # Invert the sulids dictionary so it's searchable
         sulids = {value: key for key, value in self.sulids(fulids).items()}
         try:
-            return sulids[sulid]
+            return sulids[sulid.lower()]
         except KeyError:
             raise KeyError("No fulid was found with that sulid")
 

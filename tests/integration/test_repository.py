@@ -33,7 +33,6 @@ def repo_sql(config, session):
     return repository.SqlAlchemyRepository(config, session)
 
 
-@pytest.mark.skip("Not yet")
 class TestSQLAlchemyRepositoryWithoutSchema:
     def test_apply_migrations_creates_schema(self, config, tmpdir):
         sqlite_file = str(tmpdir.join("sqlite.db"))
@@ -62,7 +61,6 @@ class TestSQLAlchemyRepositoryWithSchema:
         assert rows == [(obj.id, obj.description)]
 
 
-@pytest.mark.skip("Not yet")
 @pytest.mark.parametrize(
     "factory,table,obj_model,insert_object_sql",
     models_to_try_sql,
@@ -81,7 +79,6 @@ class TestSQLAlchemyRepositoryWithOneObject:
         assert retrieved_obj.description == expected_obj.description
 
 
-@pytest.mark.skip("Not yet")
 @pytest.mark.parametrize(
     "factory,table,obj_model,insert_objects_sql",
     models_to_try_sql,
@@ -125,7 +122,6 @@ class TestSQLAlchemyRepositoryWithSeveralObjects:
         assert retrieved_obj is None
 
 
-@pytest.mark.skip("Not yet")
 @pytest.mark.parametrize("factory,table", add_fixtures)
 class TestFakeRepositoryEmpty:
     def test_repository_can_save_an_object(self, factory, table, repo):
@@ -139,7 +135,6 @@ class TestFakeRepositoryEmpty:
         assert rows == [obj]
 
 
-@pytest.mark.skip("Not yet")
 @pytest.mark.parametrize(
     "factory,table,obj_model,insert_object",
     models_to_try_fake,
@@ -157,7 +152,7 @@ class TestFakeRepositoryWithOneObject:
         # Task.__eq__ only compares reference
         assert retrieved_obj.description == expected_obj.description
 
-    def test_repository_returns_None_if_no_repositoriy_matches_get(
+    def test_repository_returns_None_if_no_repository_matches_get(
         self, factory, table, obj_model, insert_object, repo
     ):
         retrieved_obj = repo.get(obj_model, "unexistent_id")
@@ -165,7 +160,6 @@ class TestFakeRepositoryWithOneObject:
         assert retrieved_obj is None
 
 
-@pytest.mark.skip("Not yet")
 @pytest.mark.parametrize(
     "factory,table,obj_model,insert_objects",
     models_to_try_fake,

@@ -24,6 +24,7 @@ task = Table(
     Column("agile", String(64), doc="Task agile state"),
     Column("body", Text),
     Column("closed", DateTime),
+    Column("created", DateTime),
     Column("due", DateTime),
     Column("estimate", Float, doc="Task estimate size"),
     Column("fun", Integer),
@@ -62,6 +63,9 @@ project = Table(
     metadata,
     Column("id", String(64), primary_key=True, doc="Project name"),
     Column("description", String(255), nullable=True),
+    Column("state", String(64), nullable=False),
+    Column("closed", DateTime),
+    Column("created", DateTime),
 )
 
 tag = Table(
@@ -69,6 +73,9 @@ tag = Table(
     metadata,
     Column("id", String(64), primary_key=True, doc="Tag name"),
     Column("description", String(255), nullable=True),
+    Column("state", String(64), nullable=False),
+    Column("closed", DateTime),
+    Column("created", DateTime),
     # tasks = relationship(
     #     'Task',
     #     back_populates='tags',

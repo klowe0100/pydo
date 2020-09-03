@@ -1,8 +1,8 @@
 """Initial schema
 
-Revision ID: be83538d62e6
+Revision ID: 29ed1fb7b9fe
 Revises:
-Create Date: 2020-08-31 22:12:13.754740
+Create Date: 2020-09-03 17:01:31.072078
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = "be83538d62e6"
+revision = "29ed1fb7b9fe"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -22,12 +22,18 @@ def upgrade():
         "project",
         sa.Column("id", sa.String(length=64), nullable=False),
         sa.Column("description", sa.String(length=255), nullable=True),
+        sa.Column("state", sa.String(length=64), nullable=False),
+        sa.Column("closed", sa.DateTime(), nullable=True),
+        sa.Column("created", sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
         "tag",
         sa.Column("id", sa.String(length=64), nullable=False),
         sa.Column("description", sa.String(length=255), nullable=True),
+        sa.Column("state", sa.String(length=64), nullable=False),
+        sa.Column("closed", sa.DateTime(), nullable=True),
+        sa.Column("created", sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -36,6 +42,7 @@ def upgrade():
         sa.Column("agile", sa.String(length=64), nullable=True),
         sa.Column("body", sa.Text(), nullable=True),
         sa.Column("closed", sa.DateTime(), nullable=True),
+        sa.Column("created", sa.DateTime(), nullable=True),
         sa.Column("due", sa.DateTime(), nullable=True),
         sa.Column("estimate", sa.Float(), nullable=True),
         sa.Column("fun", sa.Integer(), nullable=True),

@@ -4,7 +4,7 @@ import os
 import random
 import re
 from shutil import copyfile
-from typing import Any, List, Optional, Set
+from typing import Any, List, Optional, Set, Tuple
 
 import pytest
 from sqlalchemy import create_engine
@@ -16,16 +16,19 @@ from pydo.adapters.orm import metadata, start_mappers
 from pydo.config import Config
 from pydo.model.project import Project
 from pydo.model.tag import Tag
-from pydo.model.task import Task
+from pydo.model.task import RecurrentTask, Task
 from tests import factories
 
 
 @pytest.fixture
-def sqlite_db():
+def sqlite_db(tmpdir):
     """ SQLite database engine creator """
-    engine = create_engine("sqlite:///:memory:")
+    sqlite_file = str(tmpdir.join("sqlite.db"))
+    engine = create_engine(f"sqlite:///{sqlite_file}")
+    # engine = create_engine("sqlite:///:memory:")
     metadata.create_all(engine)
-    return engine
+    yield engine
+    engine.dispose()
 
 
 @pytest.fixture
@@ -33,8 +36,10 @@ def session(sqlite_db):
     """ SQLite session creator """
     clear_mappers()
     start_mappers()
-    yield sessionmaker(bind=sqlite_db)()
+    session = sessionmaker(bind=sqlite_db)()
+    yield session
     clear_mappers()
+    session.close()
 
 
 @pytest.fixture()
@@ -71,29 +76,55 @@ class FakeRepository(repository.AbstractRepository):
         except StopIteration:
             return None
 
-    def _select_table(self, obj_model: types.EntityType) -> types.Entities:
+    def _select_table(self, entity_model: types.EntityType) -> types.Entities:
         """
         Method to return the list of objects matching an object model type.
         """
-        if obj_model.__doc__ is None:
-            raise AttributeError("The model {obj_model} is not documented")
-        if "project" in obj_model.__doc__:
+        if entity_model.__doc__ is None:
+            raise AttributeError("The model {entity_model} is not documented")
+        if "project" in entity_model.__doc__:
             return list(self._project)
-        elif "tag" in obj_model.__doc__:
+        elif "tag" in entity_model.__doc__:
             return list(self._tag)
-        elif "task" in obj_model.__doc__:
+        elif "task" in entity_model.__doc__:
             return list(self._task)
         else:
             raise NotImplementedError
 
-    def get(self, obj_model: types.EntityType, id: str) -> types.Entity:
-        return self._get_object(id, self._select_table(obj_model))
+    def _populate_children(self, parent_task: Task) -> None:
 
-    def all(self, obj_model: types.EntityType) -> List[types.Entity]:
+        parent_task.children = self.search(Task, "parent_id", parent_task.id)
+
+    def _populate_parent(self, child_task: Task) -> None:
+        if child_task.parent_id is None:
+            raise ValueError("trying to load a parent task of an orphan child")
+
+        parent = self.get(Task, child_task.parent_id)
+
+        if parent is not None:
+            if not isinstance(parent, Task):
+                raise TypeError("trying to load wrong object as a parent task")
+            child_task.parent = parent
+
+    def get(self, entity_model: types.EntityType, entity_id: str) -> types.Entity:
+        if entity_model == Task:
+            entity_id = self.short_id_to_id(entity_id, entity_model)
+
+        entity = self._get_object(entity_id, self._select_table(entity_model))
+
+        if entity_model == Task and entity is not None:
+            if entity.type == "recurrent_task":
+                self._populate_children(entity)
+            elif entity.parent_id is not None:
+                self._populate_parent(entity)
+
+        return entity
+
+    def all(self, entity_model: types.EntityType) -> List[types.Entity]:
         """
         Method to get all items of the repository.
         """
-        return sorted(list(self._select_table(obj_model)))
+        return sorted(list(self._select_table(entity_model)))
 
     def commit(self) -> None:
         """
@@ -108,19 +139,18 @@ class FakeRepository(repository.AbstractRepository):
         pass
 
     def search(
-        self, obj_model: types.EntityType, field: str, value: str
+        self, entity_model: types.EntityType, field: str, value: str
     ) -> Optional[List[types.Entity]]:
         """
         Method to search for items that match a condition.
         """
+        result = []
         try:
-            result = sorted(
-                [
-                    entity
-                    for entity in self._select_table(obj_model)
-                    if re.match(getattr(entity, field), value)
-                ]
-            )
+            for entity in self._select_table(entity_model):
+                field_value = getattr(entity, field)
+                if field_value is not None and re.match(value, field_value):
+                    result.append(entity)
+            result = sorted(result)
         except AttributeError:
             return None
 
@@ -151,6 +181,24 @@ def insert_tasks(repo):
     repo.commit()
 
     return tasks
+
+
+@pytest.fixture()
+def insert_parent_task(
+    repo: repository.AbstractRepository,
+) -> Tuple[RecurrentTask, Task]:
+
+    parent_task = factories.RecurrentTaskFactory.create(state="open")
+    child_task = parent_task.breed_children(factories.create_fulid())
+
+    parent_task.children = [child_task]
+    child_task.parent = parent_task
+
+    repo.add(parent_task)
+    repo.add(child_task)
+    repo.commit()
+
+    return parent_task, child_task
 
 
 @pytest.fixture()
@@ -190,7 +238,7 @@ def insert_projects(repo):
 
 
 @pytest.fixture
-def insert_object(request, session, insert_task, insert_tag, insert_project):
+def insert_object(request, insert_task, insert_tag, insert_project):
     if request.param == "insert_task":
         return insert_task
     elif request.param == "insert_project":
@@ -200,7 +248,7 @@ def insert_object(request, session, insert_task, insert_tag, insert_project):
 
 
 @pytest.fixture
-def insert_objects(request, session, insert_tasks, insert_tags, insert_projects):
+def insert_objects(request, insert_tasks, insert_tags, insert_projects):
     if request.param == "insert_task":
         return insert_tasks
     elif request.param == "insert_project":

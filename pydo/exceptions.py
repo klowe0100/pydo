@@ -9,3 +9,7 @@ class TaskAttributeError(Exception):
 
 class DateParseError(Exception):
     pass
+
+
+class EntityNotFoundError(Exception):
+    pass
