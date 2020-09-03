@@ -1,5 +1,11 @@
 """
 Module to store the command line interface.
+
+Functions:
+    add: Define the interface to add tasks.
+    cli: Define the main click group.
+    do: Define the interface to complete tasks
+    null: Does nothing.
 """
 
 import logging
@@ -10,14 +16,14 @@ import click
 
 from pydo import exceptions, services
 from pydo.entrypoints import (
-    _load_config,
-    _load_logger,
-    _load_repository,
-    _load_session,
-    _parse_task_arguments,
+    load_config,
+    load_logger,
+    load_repository,
+    load_session,
+    parse_task_arguments,
 )
 
-_load_logger()
+load_logger()
 log = logging.getLogger(__name__)
 
 
@@ -32,23 +38,31 @@ log = logging.getLogger(__name__)
 @click.option("-v", "--verbose", default=False)
 @click.pass_context
 def cli(ctx: Any, config_path: str, verbose: bool) -> None:
+    """
+    Function to define the main click group.
+    """
+
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)
     ctx.ensure_object(dict)
 
-    ctx.obj["config"] = _load_config(config_path)
-    ctx.obj["session"] = _load_session(ctx.obj["config"])
-    ctx.obj["repo"] = _load_repository(ctx.obj["config"], ctx.obj["session"])
+    ctx.obj["config"] = load_config(config_path)
+    ctx.obj["session"] = load_session(ctx.obj["config"])
+    ctx.obj["repo"] = load_repository(ctx.obj["config"], ctx.obj["session"])
     ctx.obj["repo"].apply_migrations()
-    _load_logger(verbose)
+    load_logger(verbose)
 
 
 @cli.command(context_settings=dict(ignore_unknown_options=True,))
 @click.argument("task_args", nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
 def add(ctx, task_args) -> None:
+    """
+    Function to define the interface to add tasks.
+    """
+
     try:
-        task_attributes: Dict = _parse_task_arguments(task_args)
+        task_attributes: Dict = parse_task_arguments(task_args)
     except exceptions.DateParseError as e:
         log.error(str(e))
         sys.exit(1)
@@ -61,15 +75,25 @@ def add(ctx, task_args) -> None:
 
 
 @cli.command(context_settings=dict(ignore_unknown_options=True,))
-@click.argument("task_filter", nargs=-1, type=click.UNPROCESSED)
+@click.option("-d", "--close_date", default="now")
+@click.option("-p", "--close_parent", default=None)
+@click.argument("task_filter", nargs=1, required=True, type=click.UNPROCESSED)
 @click.pass_context
-def do(ctx, task_filter) -> None:
-    services.do_task(ctx.obj["repo"], task_filter)
+def do(ctx, task_filter, close_date, close_parent) -> None:
+    """
+    Function to define the interface to complete tasks.
+    """
+
+    services.do_task(ctx.obj["repo"], task_filter, close_date, close_parent)
 
 
 @cli.command()
 def null() -> None:
-    """Command that does nothing, for testing purposes."""
+    """
+    Function that does nothing.
+
+    Used for the tests until we have a better solution.
+    """
     pass
 
 
@@ -88,15 +112,6 @@ if __name__ == "__main__":
 #
 #     subparser = parser.add_subparsers(dest="subcommand", help="subcommands")
 #     subparser.add_parser("install")
-#
-#     add_parser = subparser.add_parser("add")
-#     add_parser.add_argument(
-#         "add_argument",
-#         type=str,
-#         help="Task add arguments",
-#         default=None,
-#         nargs=argparse.REMAINDER,
-#     )
 #
 #     modify_parser = subparser.add_parser("mod")
 #     modify_parser.add_argument(

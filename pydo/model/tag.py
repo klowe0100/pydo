@@ -1,3 +1,10 @@
+"""
+Module to store the business model of the tag entities.
+
+Classes:
+    Tag: Entity used to non hierarchically organize the tasks.
+"""
+
 from datetime import datetime
 from typing import Optional
 
@@ -6,7 +13,29 @@ from pydo.model import Entity
 
 class Tag(Entity):
     """
-    Class to define the tag model.
+    Class to define the tag model, used to non hierarchically organize the tasks.
+
+    Attributes:
+        id: Entity identifier.
+        description: Short definition of the entity.
+        state: Categorizes and defines the actions that can be executed over the
+            entity. One of ['open', 'completed', 'deleted', 'frozen']
+
+    Properties:
+        closed: Date when the entity was closed.
+        closed: Date when the entity was created.
+
+    Methods:
+        close: Method to close the entity.
+
+    Internal Methods:
+        _get_attributes: Method to extract the entity attributes to a dictionary.
+        __eq__: Internal Python method to assess the equally between class objects.
+        __lt__: Internal Python method to compare class objects.
+        __gt__: Internal Python method to compare class objects.
+        __hash__: Internal Python method to create an unique hash of the class object.
+        __repr__: Internal Python method to show when printing the object.
+        __str__: Internal Python method to show when printing the object.
     """
 
     def __init__(
@@ -20,21 +49,45 @@ class Tag(Entity):
         super().__init__(id, description, state, created, closed)
 
     def __eq__(self, other) -> bool:
+        """
+        Internal Python method to assess the equally between class objects.
+        """
+
         if not isinstance(other, Tag):
             return False
         return other.id == self.id
 
     def __lt__(self, other) -> bool:
+        """
+        Internal Python method to compare class objects.
+        """
+
         return super().__lt__(other)
 
     def __gt__(self, other) -> bool:
+        """
+        Internal Python method to compare class objects.
+        """
+
         return super().__gt__(other)
 
     def __hash__(self) -> int:
+        """
+        Internal Python method to create an unique hash of the class object.
+        """
+
         return super().__hash__()
 
     def __repr__(self) -> str:
+        """
+        Internal Python method to show when printing the object.
+        """
+
         return f"<Tag {self.id}>"
 
     def __str__(self) -> str:
-        return "Tag"
+        """
+        Internal Python method to show when printing the object.
+        """
+
+        return f"<Tag {self.id}>"

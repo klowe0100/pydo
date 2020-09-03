@@ -1,3 +1,20 @@
+"""
+Module to store the functions shared by the different entrypoints.
+
+Functions:
+    load_config: Load the configuration from the file.
+    load_repository: Configure the SqlAlchemyRepository with the session
+        and config objects.
+    load_session: Load the session from the database defined in the config file.
+    load_logger: Configure the Logging logger.
+    parse_task_arguments: Parse the Task attributes from a friendly task
+        attributes string.
+
+Internal Functions:
+    _parse_task_argument: Parse the Task attributes from a friendly task
+        attribute string.
+"""
+
 import logging
 import os
 import re
@@ -17,7 +34,9 @@ log = logging.getLogger(__name__)
 
 
 def _load_config(config_path: str) -> Config:
-    """Load the configuration from the file."""
+    """
+    Function to load the configuration from the file.
+    """
 
     log.debug(f"Loading the configuration from file {config_path}")
     try:
@@ -35,6 +54,12 @@ def _load_config(config_path: str) -> Config:
 
 
 def _load_session(config: Config) -> Any:
+    """
+    Function to load the session from the database defined in the config file.
+
+    It will also run the ORM mappers.
+    """
+
     log.debug(
         f"Creating sqlite session to database {config.get('storage.sqlite.path')}"
     )
@@ -46,12 +71,20 @@ def _load_session(config: Config) -> Any:
 
 
 def _load_repository(config: Config, session: Any) -> repository.AbstractRepository:
+    """
+    Function to configure the SqlAlchemyRepository with the session and config objects.
+    """
+
     log.debug("Initializing sqlalchemy repository")
     repo = repository.SqlAlchemyRepository(config, session)
     return repo
 
 
 def _load_logger(verbose: bool = False) -> None:
+    """
+    Function to configure the Logging logger.
+    """
+
     logging.addLevelName(logging.INFO, "[\033[36m+\033[0m]")
     logging.addLevelName(logging.ERROR, "[\033[31m+\033[0m]")
     logging.addLevelName(logging.DEBUG, "[\033[32m+\033[0m]")
@@ -70,7 +103,7 @@ def _load_logger(verbose: bool = False) -> None:
 
 def _parse_task_argument(task_arg: str) -> Tuple[str, Union[str, int, float, datetime]]:
     """
-    Parse a Taskwarrior like filter or add argument into a task attribute.
+    Function to parse the Task attributes from a friendly task attribute string.
 
     Returns:
         attribute_id (str): Attribute key.
@@ -115,9 +148,9 @@ def _parse_task_argument(task_arg: str) -> Tuple[str, Union[str, int, float, dat
     return "description", task_arg
 
 
-def _parse_task_arguments(task_args: str) -> Dict:
+def parse_task_arguments(task_args: str) -> Dict:
     """
-    Parse a Taskwarrior like add query into task attributes
+    Function to parse the Task attributes from a friendly task attributes string.
     """
 
     task_attributes: Dict = {}

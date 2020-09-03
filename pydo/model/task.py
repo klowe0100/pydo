@@ -1,3 +1,11 @@
+"""
+Module to store the business model of the task entities.
+
+Classes:
+    Task: Singular task
+    RecurrentTask: Task that is repeated over the time
+"""
+
 import logging
 from datetime import datetime
 from typing import Dict, Iterable, List, Optional
@@ -5,27 +13,59 @@ from typing import Dict, Iterable, List, Optional
 from pydo import exceptions
 from pydo.model import Entity
 from pydo.model.date import convert_date
-from pydo.model.project import Project
-from pydo.model.tag import Tag
 
 log = logging.getLogger(__name__)
 
 
 class Task(Entity):
     """
-    Class to define the task model.
+    Class to define the simple task model.
 
-    Attributes populated by repository:
-        * children
-        * parent
+    Attributes:
+        body: Long definition of the entity.
+        children: List of the task children task. It's populated by the repositories.
+        description: Short definition of the entity.
+        due: Date before the task has to be closed.
+        estimate: Measure of the size of the task in time or points.
+        fun: Measure of the amount of fun doing the task gives you.
+        id: Entity identifier.
+        parent: Task parent task. It's populated by the repositories.
+        parent_id: Id of Task parent task.
+        priority: Measure of the urgency to close the task.
+        project_id: Id of Project of the task.
+        state: Categorizes and defines the actions that can be executed over the
+            entity. One of ['open', 'completed', 'deleted', 'frozen'].
+        tag_ids: List of Tag Ids associated to the task.
+        type: Defines the task kind. One of ['task', 'recurrent_task'].
+        value: Measure how much you feel this task is going to help you achieve a
+            specific goal.
+        wait: Date to start to show the task in the reports.
+        willpower: Measure how much energy the execution of the task consumes.
+            Understanding energy as physical or mental energy.
+
+    Properties:
+        agile: Defines the agile state of the task.
+            One of ['backlog', 'complete', 'doing', 'review', todo'].
+        closed: Date when the entity was closed.
+        closed: Date when the entity was created.
+
+    Methods:
+        close: Method to close the entity.
+
+    Internal Methods:
+        _get_attributes: Method to extract the entity attributes to a dictionary.
+        __eq__: Internal Python method to assess the equally between class objects.
+        __lt__: Internal Python method to compare class objects.
+        __gt__: Internal Python method to compare class objects.
+        __hash__: Internal Python method to create an unique hash of the class object.
+        __repr__: Internal Python method to show when printing the object.
+        __str__: Internal Python method to show when printing the object.
     """
 
     def __init__(
         self,
         id: str,
         description: Optional[str] = None,
-        state: str = "open",
-        type: str = "task",
         agile: Optional[str] = None,
         body: Optional[str] = None,
         closed: Optional[datetime] = None,
@@ -36,73 +76,97 @@ class Task(Entity):
         parent_id: Optional[str] = None,
         priority: Optional[int] = None,
         project_id: Optional[str] = None,
-        project: Optional[Project] = None,
+        state: str = "open",
         tag_ids: Optional[List[str]] = None,
-        tags: Optional[List[Tag]] = None,
+        type: str = "task",
         value: Optional[int] = None,
         wait: Optional[datetime] = None,
         willpower: Optional[int] = None,
     ):
         super().__init__(id, description, state, created, closed)
-        self.type = type
         self.agile = agile
         self.body = body
+        self.children: Optional[List] = []
         self.due = due
         self.estimate = estimate
         self.fun = fun
-        self.children = []
         self.parent = None
         self.parent_id = parent_id
         self.priority = priority
         self.project_id = project_id
+        self.tag_ids = tag_ids
+        self.type = type
         self.value = value
         self.wait = wait
         self.willpower = willpower
-        self.project: Optional[Project] = project
-        self.tag_ids = tag_ids
-        if tags is None:
-            tags = []
-        self.tags: List[Tag] = tags
 
     def __eq__(self, other) -> bool:
+        """
+        Internal Python method to assess the equally between class objects.
+        """
+
         if not isinstance(other, Task):
             return False
         return other.id == self.id
 
     def __lt__(self, other) -> bool:
+        """
+        Internal Python method to compare class objects.
+        """
+
         return super().__lt__(other)
 
     def __gt__(self, other) -> bool:
+        """
+        Internal Python method to compare class objects.
+        """
+
         return super().__gt__(other)
 
     def __hash__(self) -> int:
+        """
+        Internal Python method to create an unique hash of the class object.
+        """
+
         return super().__hash__()
 
     def __str__(self) -> str:
-        return "Task"
+        """
+        Internal Python method to show when printing the object.
+        """
+
+        return f"<Task {self.id}>"
 
     def __repr__(self) -> str:
+        """
+        Internal Python method to show when printing the object.
+        """
+
         return f"<Task {self.id}>"
 
     @property
     def agile(self) -> Optional[str]:
+        """
+        Property getter of the attribute that stores the agile state of the task.
+        """
+
         return self._agile
 
     @agile.setter
     def agile(self, agile_state: Optional[str]) -> None:
         """
-        Method to set the agile attribute.
+        Property setter of the attribute that stores the agile state of the task.
 
         If the agile property value isn't between the specified ones,
         a `ValueError` will be raised.
-
         """
+
         allowed_agile_states: Iterable[str] = [
             "backlog",
-            "todo",
+            "complete",
             "doing",
             "review",
-            "complete",
+            "todo",
         ]
         if agile_state is not None and agile_state not in allowed_agile_states:
             raise ValueError(
@@ -114,7 +178,56 @@ class Task(Entity):
 
 class RecurrentTask(Task):
     """
-    Class to define the recurrent task model.
+    Class to define the model of a task that is repeated over the time.
+
+    Attributes:
+        body: Long definition of the entity.
+        children: List of the task children task. It's populated by the repositories.
+        description: Short definition of the entity.
+        due: Date before the task has to be closed.
+        estimate: Measure of the size of the task in time or points.
+        fun: Measure of the amount of fun doing the task gives you.
+        id: Entity identifier.
+        parent: Task parent task. It's populated by the repositories.
+        parent_id: Id of Task parent task.
+        priority: Measure of the urgency to close the task.
+        project_id: Id of Project of the task.
+        state: Categorizes and defines the actions that can be executed over the
+            entity. One of ['open', 'completed', 'deleted', 'frozen'].
+        tag_ids: List of Tag Ids associated to the task.
+        type: Defines the task kind. One of ['task', 'recurrent_task'].
+        value: Measure how much you feel this task is going to help you achieve a
+            specific goal.
+        wait: Date to start to show the task in the reports.
+        willpower: Measure how much energy the execution of the task consumes.
+            Understanding energy as physical or mental energy.
+
+    Properties:
+        agile: Defines the agile state of the task.
+            One of ['backlog', 'complete', 'doing', 'review', todo'].
+        closed: Date when the entity was closed.
+        closed: Date when the entity was created.
+        recurrence: Time between creation of recurrent tasks.
+        recurrence_type: Kind of recurrence.  One of ['recurring', 'repeating'].
+
+    Methods:
+        breed_children: Method to create the next parent children
+        close: Method to close the entity.
+
+    Internal Methods:
+        _generate_children_attributes: Method to generate the child attributes from
+            the parent's.
+        _get_attributes: Method to extract the entity attributes to a dictionary.
+        _next_recurring_due: Method to calculate the next due date of recurring parent
+            children.
+        _next_repeating_due: Method to calculate the next due date of repeating parent
+            children.
+        __eq__: Internal Python method to assess the equally between class objects.
+        __lt__: Internal Python method to compare class objects.
+        __gt__: Internal Python method to compare class objects.
+        __hash__: Internal Python method to create an unique hash of the class object.
+        __repr__: Internal Python method to show when printing the object.
+        __str__: Internal Python method to show when printing the object.
     """
 
     def __init__(
@@ -170,19 +283,38 @@ class RecurrentTask(Task):
 
     @property
     def recurrence(self) -> Optional[str]:
+        """
+        Property getter of the attribute that stores the time between creation
+        of recurrent tasks.
+        """
+
         return self._recurrence
 
     @recurrence.setter
     def recurrence(self, recurrence: Optional[str]) -> None:
-        # XXX: We need to perform input validation
+        """
+        Property setter of the attribute that stores the time between creation
+        of recurrent tasks.
+        """
+
+        # TODO: We need to perform input validation
         self._recurrence = recurrence
 
     @property
     def recurrence_type(self) -> Optional[str]:
+        """
+        Property getter of the attribute that stores the kind of recurrence.
+        One of ['recurring', 'repeating'].
+        """
+
         return self._recurrence_type
 
     @recurrence_type.setter
     def recurrence_type(self, recurrence_type: Optional[str]) -> None:
+        """
+        Property setter of the attribute that stores the kind of recurrence.
+        """
+
         if recurrence_type in ["repeating", "recurring"]:
             self._recurrence_type = recurrence_type
         else:
@@ -192,9 +324,15 @@ class RecurrentTask(Task):
 
     def _next_recurring_due(self) -> datetime:
         """
+        Method to calculate the next due date of recurring parent children.
+
         It will apply `recurrence` to the parent's due date, till we get the next
         one in the future.
         """
+
+        # To speed it up, you can't use the last child attributes. You'll need to
+        # Improve the convergence algorithm, maybe a Bisection, Regula Falsi or Newton.
+
         if self.recurrence is None:
             raise ValueError(
                 "The recurrence of the task {self.id} is None, so it can't breed"
@@ -209,9 +347,12 @@ class RecurrentTask(Task):
 
     def _next_repeating_due(self) -> datetime:
         """
+        Method to calculate the next due date of repeating parent children.
+
         It will apply `recurrence` to the last completed or deleted child's
         completed date. If no child exists, it will use the parent's due date.
         """
+
         if self.recurrence is None:
             raise ValueError(
                 "The recurrence of the task {self.id} is None, so it can't breed"
@@ -228,6 +369,10 @@ class RecurrentTask(Task):
             return convert_date(self.recurrence, max(self.children).closed)
 
     def _generate_children_attributes(self) -> Dict:
+        """
+        Method to generate the child attributes from the parent's.
+        """
+
         child_attributes = self._get_attributes()
 
         # Set child particular attributes
@@ -259,7 +404,9 @@ class RecurrentTask(Task):
         return child_attributes
 
     def breed_children(self, children_id: str) -> Task:
-        """Method to create the next parent children"""
+        """
+        Method to create the next parent children
+        """
 
         try:
             self.children
@@ -279,6 +426,11 @@ class RecurrentTask(Task):
         return child_task
 
     def close(self, state: str, close_date: Optional[datetime] = None) -> None:
+        """
+        Method to override the Entity method to close a task, so that the parent
+        children are closed with her.
+        """
+
         super().close(state, close_date)
 
         if self.children is not None:

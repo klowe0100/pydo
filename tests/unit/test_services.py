@@ -1,5 +1,5 @@
 import logging
-from datetime import date, datetime
+from datetime import datetime
 
 import pytest
 
@@ -31,22 +31,16 @@ class TestTaskAdd:
             f"Added task {task.id}: {task.description}",
         ) in caplog.record_tuples
 
-    def test_add_generates_secuential_fulid_for_tasks(
+    def test_add_generates_secuential_sortable_fulid_for_tasks(
         self, repo, config, faker, insert_task
     ):
-        existent_task = insert_task
-        existent_task_fulid_id_number = fulid()._decode_id(existent_task.id)
+        tasks = [insert_task]
 
-        first_task_attributes = {"description": faker.sentence()}
-        first_task = services.add_task(repo, first_task_attributes)
-        first_task_fulid_id_number = fulid()._decode_id(first_task.id)
+        task_attributes = {"description": faker.sentence()}
+        for task_number in range(1, 100):
+            tasks.append(services.add_task(repo, task_attributes))
 
-        second_task_attributes = {"description": faker.sentence()}
-        second_task = services.add_task(repo, second_task_attributes)
-        second_task_fulid_id_number = fulid()._decode_id(second_task.id)
-
-        assert first_task_fulid_id_number - existent_task_fulid_id_number == 1
-        assert second_task_fulid_id_number - first_task_fulid_id_number == 1
+            assert fulid()._decode_id(tasks[task_number].id) == task_number
 
     def test_add_assigns_project_if_exist(self, config, repo, faker, insert_project):
         project = insert_project
@@ -54,7 +48,7 @@ class TestTaskAdd:
 
         task = services.add_task(repo, task_attributes)
 
-        assert task.project is project
+        assert task.project_id is project.id
 
     def test_add_generates_project_if_doesnt_exist(self, config, repo, faker, caplog):
         task_attributes = {
@@ -66,7 +60,6 @@ class TestTaskAdd:
         project = repo.get(Project, "non_existent")
 
         assert task.project_id is project.id
-        assert task.project == project
         assert project.id == "non_existent"
         assert (
             "pydo.services",
@@ -82,8 +75,9 @@ class TestTaskAdd:
         }
 
         task = services.add_task(repo, task_attributes)
+        __import__("pdb").set_trace()  # XXX BREAKPOINT
 
-        assert task.tags == [existent_tag]
+        assert task.tag_ids == [existent_tag.id]
 
     def test_add_generates_tag_if_doesnt_exist(self, config, repo, faker, caplog):
         task_attributes = {
@@ -94,7 +88,7 @@ class TestTaskAdd:
         task = services.add_task(repo, task_attributes)
         tag = repo.get(Tag, "non_existent")
 
-        assert task.tags == [tag]
+        assert task.tag_ids == [tag.id]
         assert tag.id == "non_existent"
         assert (
             "pydo.services",
@@ -176,12 +170,12 @@ class TestTaskDo:
         ) in caplog.record_tuples
 
     def test_do_task_with_complete_date(self, repo, insert_task, caplog):
-        complete_date = date(2003, 8, 6)
+        complete_date = "2003-08-06"
         task = insert_task
 
         services.do_task(repo, task.id, complete_date)
 
-        assert task.closed == complete_date
+        assert task.closed == datetime(2003, 8, 6)
         assert task.state == "completed"
         assert (
             "pydo.services",
@@ -271,6 +265,10 @@ class TestTaskDo:
 
         assert task.state == "completed"
         assert task.closed == now
+
+    @pytest.mark.skip("Not yet")
+    def test_do_accepts_list_of_tasks(self):
+        pass
 
 
 #     @patch("pydo.manager.TaskManager._spawn_next_recurring")

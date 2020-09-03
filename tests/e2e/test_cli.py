@@ -8,13 +8,13 @@ import pytest
 from alembic.config import Config as AlembicConfig
 from click.testing import CliRunner
 
-from pydo.adapters import repository
 from pydo.config import Config
+from pydo.entrypoints import _load_repository, _load_session
 from pydo.entrypoints.cli import cli
 from tests import factories
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def config_e2e(tmpdir_factory):
     data = tmpdir_factory.mktemp("data")
     config_file = str(data.join("config.yaml"))
@@ -29,7 +29,7 @@ def config_e2e(tmpdir_factory):
     yield config
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def runner(config_e2e):
     alembic_config = AlembicConfig("pydo/migrations/alembic.ini")
     alembic_config.attributes["configure_logger"] = False
@@ -45,25 +45,25 @@ class TestCli:
 
         result = runner.invoke(cli, ["-c", str(config_file), "null"])
 
+        assert result.exit_code == 1
         assert (
             "pydo.entrypoints",
             logging.ERROR,
             f"Error parsing yaml of configuration file {config_file}: expected ',' or"
             " ']', but got '<stream end>'",
         ) in caplog.record_tuples
-        assert result.exit_code == 1
 
     def test_load_handles_file_not_found(self, runner, tmpdir, caplog):
         config_file = tmpdir.join("unexistent_config.yaml")
 
         result = runner.invoke(cli, ["-c", str(config_file), "null"])
 
+        assert result.exit_code == 1
         assert (
             "pydo.entrypoints",
             logging.ERROR,
             f"Error opening configuration file {config_file}",
         ) in caplog.record_tuples
-        assert result.exit_code == 1
 
     def test_migrations_are_run_if_database_is_empty(self, config, caplog, tmpdir):
         sqlite_file = str(tmpdir.join("sqlite.db"))
@@ -158,45 +158,61 @@ class TestCliAdd:
         )
 
 
-@pytest.mark.skip("Not yet")
+@pytest.fixture
+def repo_e2e(config_e2e):
+    session = _load_session(config_e2e)
+    yield _load_repository(config_e2e, session)
+
+
+@pytest.fixture
+def insert_task_e2e(repo_e2e):
+    task = factories.TaskFactory.create(state="open")
+    repo_e2e.add(task)
+    repo_e2e.commit()
+    yield task
+
+
 class TestCliDo:
-    def test_do_task_by_short_id(self, repo, insert_task, freezer, caplog):
-        pass
+    def test_do_task_by_short_id(self, runner, insert_task_e2e, caplog):
+        task = insert_task_e2e
 
-    def test_do_task_with_complete_date(self, repo, insert_task, caplog):
-        pass
+        task_id = task.id
+        task_description = task.description
 
-
-#     @patch("pydo.manager.TaskManager._get_fulid")
-#     def test_complete_task_by_fulid_gives_nice_error_if_unexistent(self, mock):
-#         mock.side_effect = KeyError("No fulid was found with that sulid")
-#
-#         self.manager.complete("non_existent_id")
-#
-#         self.log.error.assert_called_once_with("There is no task with that id")
-#
-#     def test_date_manager_loaded_in_attribute(self):
-#         assert isinstance(self.manager.date, DateManager)
-
-
-@pytest.fixture()
-def insert_task(config_e2e, session):
-    repo = repository.SqlAlchemyRepository(config_e2e, session)
-    task = factories.TaskFactory.create()
-    repo.add(task)
-    repo.commit()
-    return task
-
-
-@pytest.mark.skip("Not yet")
-class TestCliDone:
-    def test_do_subcommand_completes_task(self, runner, faker, caplog, insert_task):
-        task = insert_task
         result = runner.invoke(cli, ["do", "a"])
+
         assert result.exit_code == 0
-        assert re.match(
-            f"Completed task {task.id}: {task.description}", caplog.records[0].msg
-        )
+        assert (
+            "pydo.services",
+            logging.INFO,
+            f"Closed task {task_id}: {task_description} with state completed",
+        ) in caplog.record_tuples
+
+    def test_do_task_with_complete_date(self, runner, insert_task_e2e, caplog):
+        task = insert_task_e2e
+
+        task_id = task.id
+        task_description = task.description
+
+        result = runner.invoke(cli, ["do", "-d", "1d", "a"])
+
+        assert result.exit_code == 0
+        assert (
+            "pydo.services",
+            logging.INFO,
+            f"Closed task {task_id}: {task_description} with state completed",
+        ) in caplog.record_tuples
+
+    #     @patch("pydo.manager.TaskManager._get_fulid")
+    #     def test_complete_task_by_fulid_gives_nice_error_if_unexistent(self, mock):
+    #         mock.side_effect = KeyError("No fulid was found with that sulid")
+    #
+    #         self.manager.complete("non_existent_id")
+    #
+    #         self.log.error.assert_called_once_with("There is no task with that id")
+    #
+    #     def test_date_manager_loaded_in_attribute(self):
+    #         assert isinstance(self.manager.date, DateManager)
 
     @pytest.mark.skip("Not yet")
     def test_do_does_nothing_if_empty_filter(self, runner, faker, caplog):

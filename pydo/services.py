@@ -1,16 +1,30 @@
 """
-Module to store the operations functions needed to maintain the program.
+Module to store the operation functions needed to maintain the program.
 
 Functions:
+    add_task: Function to create a new task.
+    do_task: Function to complete a task.
+
     install: Function to create the environment for pydo.
     export: Function to export the database to json to stdout.
+
+Internal functions:
+    Configure:
+        _configure_task: Configures a new task.
+        _set_task_tags: Configure the tags of a task.
+        _set_task_project: Configure the projects of a task.
+    Add:
+        _add_simple_task: Adds a non recurrent task.
+        _add_recurrent_task: Adds a non recurrent task.
+    Close:
+        _close_task: Closes a task
 """
 
 import logging
-from datetime import datetime
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Tuple, Union
 
 from pydo.adapters import repository
+from pydo.model.date import convert_date
 from pydo.model.project import Project
 from pydo.model.tag import Tag
 from pydo.model.task import RecurrentTask, Task
@@ -24,8 +38,8 @@ def _configure_task(repo: repository.AbstractRepository, task: Task) -> None:
         * Setting task project
         * Setting task tags
     """
-    set_task_project(repo, task)
-    set_task_tags(repo, task)
+    _set_task_project(repo, task)
+    _set_task_tags(repo, task)
 
 
 def _add_simple_task(
@@ -87,14 +101,12 @@ def add_task(
         return _add_simple_task(repo, task_attributes)
 
 
-def set_task_tags(repo: repository.AbstractRepository, task: Task) -> None:
+def _set_task_tags(repo: repository.AbstractRepository, task: Task) -> None:
     """
-    Method to set the tags attribute.
+    Function to set the tags attribute.
 
     A new tag will be created if it doesn't exist yet.
     """
-    # commit_necessary = False
-
     if task.tag_ids is None:
         return
 
@@ -106,14 +118,9 @@ def set_task_tags(repo: repository.AbstractRepository, task: Task) -> None:
             log.info(f"Added tag {tag.id}")
         elif not isinstance(tag, Tag):
             raise TypeError("Tried to load the wrong object as a tag")
-            # commit_necessary = True
-        task.tags.append(tag)
-
-    # if commit_necessary:
-    #     self.session.commit()
 
 
-def set_task_project(repo: repository.AbstractRepository, task: Task):
+def _set_task_project(repo: repository.AbstractRepository, task: Task):
     """
     Function to set the project of a task.
 
@@ -127,21 +134,25 @@ def set_task_project(repo: repository.AbstractRepository, task: Task):
             log.info(f"Added project {project.id}")
         elif not isinstance(project, Project):
             raise TypeError("Tried to load the wrong object as a project")
-        task.project = project
 
 
 def _close_task(
     repo: repository.AbstractRepository,
     short_id: str,
     state: str,
-    close_date: Optional[datetime] = None,
+    close_date_str: str = "now",
     delete_parent: bool = False,
 ):
+    """
+    Function to close a task
+    """
+
     task_id = repo.short_id_to_id(short_id, Task)
     task = repo.get(Task, task_id)
     if not isinstance(task, Task):
         raise TypeError("Trying to close a task, but the object is a {task}")
 
+    close_date = convert_date(close_date_str)
     task.close(state, close_date)
     repo.add(task)
     repo.commit()
@@ -170,10 +181,10 @@ def _close_task(
 def do_task(
     repo: repository.AbstractRepository,
     short_id: str,
-    complete_date: Optional[datetime] = None,
+    complete_date_str: str = "now",
     delete_parent: bool = False,
 ) -> None:
-    _close_task(repo, short_id, "completed", complete_date, delete_parent)
+    _close_task(repo, short_id, "completed", complete_date_str, delete_parent)
 
 
 # import json

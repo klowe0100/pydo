@@ -1,5 +1,20 @@
+"""
+Module to store the storage repository abstractions.
+
+Abstract Classes:
+    AbstractRepository: Gathers common methods and define the interface of the
+        repositories.
+
+Classes:
+    SqlAlchemyRepository: Implement the repository pattern using the SQLAlchemy ORM.
+
+References:
+* https://lyz-code.github.io/blue-book/architecture/repository_pattern/
+"""
+
 import abc
 import logging
+import time
 from typing import Any, List, Union
 
 import alembic.command
@@ -13,6 +28,26 @@ log = logging.getLogger(__name__)
 
 
 class AbstractRepository(abc.ABC):
+    """
+    Abstract class to gathers common methods and define the interface of the
+    repositories.
+
+    Properties:
+        fulid: A configured entity id generator.
+
+    Abstract Methods:
+        add: Append an entity to the repository.
+        all: Obtain all the entities of a type from the repository.
+        apply_migrations: Run the migrations of the repository schema.
+        commit: Persist the changes into the repository.
+        get: Obtain an entity from the repository by it's ID.
+        search: Obtain the entities whose attribute match a condition.
+
+    Methods:
+        create_next_id: Create the next entity's ID.
+        short_id_to_id: Convert a shortened ID into the complete one.
+    """
+
     @abc.abstractmethod
     def __init__(self, config: Config, session: Any) -> None:
         self.config = config
@@ -20,6 +55,12 @@ class AbstractRepository(abc.ABC):
 
     @property
     def fulid(self):
+        """
+        Property to hold a configured entity id generator.
+
+        It uses the fulid format.
+        """
+
         return fulids.fulid(
             self.config.get("fulid.characters"),
             self.config.get("fulid.forbidden_characters"),
@@ -27,21 +68,34 @@ class AbstractRepository(abc.ABC):
 
     @abc.abstractmethod
     def add(self, entity: types.Entity) -> None:
+        """
+        Method to append an entity to the repository.
+        """
+
         raise NotImplementedError
 
     @abc.abstractmethod
     def apply_migrations(self) -> None:
+        """
+        Method to run the migrations of the repository schema.
+        """
+
         raise NotImplementedError
 
     @abc.abstractmethod
     def get(self, entity_model: types.EntityType, entity_id: str) -> types.Entity:
+        """
+        Method to obtain an entity from the repository by it's ID.
+        """
+
         raise NotImplementedError
 
     @abc.abstractmethod
     def all(self, entity_model: types.EntityType) -> List[types.Entity]:
         """
-        Method to get all items of the repository.
+        Method to obtain all the entities of a type from the repository.
         """
+
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -49,6 +103,7 @@ class AbstractRepository(abc.ABC):
         """
         Method to persist the changes into the repository.
         """
+
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -56,13 +111,14 @@ class AbstractRepository(abc.ABC):
         self, entity_model: types.EntityType, field: str, value: str
     ) -> Union[List[types.Entity], None]:
         """
-        Method to search for items that match a condition.
+        Method to obtain the entities whose attribute match a condition.
         """
+
         raise NotImplementedError
 
     def create_next_id(self, entity_model: types.EntityType) -> str:
         """
-        Method to create the next entity's id.
+        Method to create the next entity's ID.
         """
 
         matching_entities = self.search(entity_model, "state", "open")
@@ -72,6 +128,11 @@ class AbstractRepository(abc.ABC):
         else:
             last_entity = max(matching_entities)
             last_id = last_entity.id
+        log.debug(f"Last entity id: {str(last_id)}")
+
+        # Required to ensure the sortability of the fulids as their precision goes
+        # down to the 0.001s
+        time.sleep(0.001)
 
         return self.fulid.new(last_id).str
 
@@ -79,8 +140,9 @@ class AbstractRepository(abc.ABC):
         self, short_id: str, entity_model: types.EntityType, state: str = "open"
     ) -> str:
         """
-        Method to create the next entity's id.
+        Method to convert a shortened ID into the complete one.
         """
+
         if len(short_id) < 10:
             matching_entities = self.search(entity_model, "state", state)
             if matching_entities is None:
@@ -102,41 +164,75 @@ class AbstractRepository(abc.ABC):
 
 
 class SqlAlchemyRepository(AbstractRepository):
+    """
+    Class to implement the repository pattern using the SQLAlchemy ORM.
+
+    Properties:
+        fulid: A configured entity id generator.
+
+    Abstract Methods:
+        add: Append an entity to the repository.
+        all: Obtain all the entities of a type from the repository.
+        apply_migrations: Run the migrations of the repository schema.
+        commit: Persist the changes into the repository.
+        get: Obtain an entity from the repository by it's ID.
+        search: Obtain the entities whose attribute match a condition.
+
+    Methods:
+        create_next_id: Create the next entity's ID.
+        short_id_to_id: Convert a shortened ID into the complete one.
+    """
+
     def __init__(self, config: Config, session: Any) -> None:
         super().__init__(config, session)
 
     def add(self, entity: types.Entity) -> None:
+        """
+        Method to append an entity to the repository.
+        """
+
         self.session.add(entity)
 
     def apply_migrations(self) -> None:
+        """
+        Method to run the migrations of the repository schema.
+        """
+
         log.debug("Running Database Migrations")
         alembic_config = AlembicConfig("pydo/migrations/alembic.ini")
         alembic_config.attributes["configure_logger"] = False
         alembic.command.upgrade(alembic_config, "head")
 
     def get(self, entity_model: types.EntityType, entity_id: str) -> types.Entity:
+        """
+        Method to obtain an entity from the repository by it's ID.
+        """
+
         if entity_model == Task:
             entity_id = self.short_id_to_id(entity_id, entity_model)
         return self.session.query(entity_model).get(entity_id)
 
     def all(self, entity_model: types.EntityType) -> List[types.Entity]:
         """
-        Method to get all items of the repository.
+        Method to obtain all the entities of a type from the repository.
         """
+
         return self.session.query(entity_model).all()
 
     def commit(self) -> None:
         """
         Method to persist the changes into the repository.
         """
+
         self.session.commit()
 
     def search(
         self, entity_model: types.EntityType, field: str, value: str
     ) -> Union[List[types.Entity], None]:
         """
-        Method to search for items that match a condition.
+        Method to obtain the entities whose attribute match a condition.
         """
+
         try:
             result = (
                 self.session.query(entity_model)

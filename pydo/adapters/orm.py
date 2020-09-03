@@ -1,3 +1,11 @@
+"""
+Module to map the business model to the SQLAlchemy ORM objects.
+
+Functions:
+    start_mappers: Function to translate the domain model relationships into
+        SQLAlchemy ones.
+"""
+
 from sqlalchemy import (
     Column,
     DateTime,
@@ -16,6 +24,8 @@ from pydo.model.tag import Tag
 from pydo.model.task import RecurrentTask, Task
 
 metadata = MetaData()
+
+# Tables
 
 task = Table(
     "task",
@@ -84,7 +94,14 @@ tag = Table(
 )
 
 
+# Relationships
+
+
 def start_mappers():
+    """
+    Function to translate the domain model relationships into SQLAlchemy ones.
+    """
+
     mapper(Project, project)
     mapper(Tag, tag)
     mapper(
