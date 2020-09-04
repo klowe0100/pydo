@@ -1,5 +1,3 @@
-# Recurrence
-
 Recurrence is used to create tasks periodically, such as paying the rent or
 mowing the lawn.
 
@@ -64,7 +62,7 @@ a     Pay the rent  1mo           2020-05-03 14:29
 
 If you complete or delete the children of a recurrent or repeating task, the
 next child will be spawned. But if you wish to delete or complete the parent so
-no further children gets created, you can do either by calling `done` or `del`
+no further children gets created, you can do either by calling `do` or `del`
 with the parent task id, or with the `-p` argument with the child id. The
 advantage of the second method is that you don't need to know the parent id, and
 it will close both parent and children

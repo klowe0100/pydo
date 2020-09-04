@@ -14,8 +14,9 @@ References:
 
 import abc
 import logging
+import re
 import time
-from typing import Any, List, Union
+from typing import Any, Dict, List, Type, Union
 
 import alembic.command
 from alembic.config import Config as AlembicConfig
@@ -41,10 +42,12 @@ class AbstractRepository(abc.ABC):
         apply_migrations: Run the migrations of the repository schema.
         commit: Persist the changes into the repository.
         get: Obtain an entity from the repository by it's ID.
+        msearch: Obtain the entities whose attributes match several conditions.
         search: Obtain the entities whose attribute match a condition.
 
     Methods:
         create_next_id: Create the next entity's ID.
+        entity_model_to_str: Obtain a nice string from an entity model.
         short_id_to_id: Convert a shortened ID into the complete one.
     """
 
@@ -83,7 +86,7 @@ class AbstractRepository(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get(self, entity_model: types.EntityType, entity_id: str) -> types.Entity:
+    def get(self, entity_model: Type[types.Entity], entity_id: str) -> types.Entity:
         """
         Method to obtain an entity from the repository by it's ID.
         """
@@ -91,7 +94,7 @@ class AbstractRepository(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, entity_model: types.EntityType) -> List[types.Entity]:
+    def all(self, entity_model: Type[types.Entity]) -> List[types.Entity]:
         """
         Method to obtain all the entities of a type from the repository.
         """
@@ -107,8 +110,20 @@ class AbstractRepository(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def msearch(
+        self, entity_model: Type[types.Entity], fields: Dict
+    ) -> Union[List[types.Entity], None]:
+        """
+        Method to obtain the entities whose attributes match several conditions.
+
+        fields is a dictionary with the {key}:{value} to search.
+        """
+
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def search(
-        self, entity_model: types.EntityType, field: str, value: str
+        self, entity_model: Type[types.Entity], field: str, value: str
     ) -> Union[List[types.Entity], None]:
         """
         Method to obtain the entities whose attribute match a condition.
@@ -116,7 +131,7 @@ class AbstractRepository(abc.ABC):
 
         raise NotImplementedError
 
-    def create_next_id(self, entity_model: types.EntityType) -> str:
+    def create_next_id(self, entity_model: Type[types.Entity]) -> str:
         """
         Method to create the next entity's ID.
         """
@@ -132,12 +147,12 @@ class AbstractRepository(abc.ABC):
 
         # Required to ensure the sortability of the fulids as their precision goes
         # down to the 0.001s
-        time.sleep(0.001)
+        time.sleep(0.01)
 
         return self.fulid.new(last_id).str
 
     def short_id_to_id(
-        self, short_id: str, entity_model: types.EntityType, state: str = "open"
+        self, short_id: str, entity_model: Type[types.Entity], state: str = "open"
     ) -> str:
         """
         Method to convert a shortened ID into the complete one.
@@ -147,7 +162,7 @@ class AbstractRepository(abc.ABC):
             matching_entities = self.search(entity_model, "state", state)
             if matching_entities is None:
                 raise exceptions.EntityNotFoundError(
-                    f"There are no {state} {entity_model}s"
+                    f"There are no {state} {self.entity_model_to_str(entity_model)}s"
                 )
 
             entity_ids = [entity.id for entity in matching_entities]
@@ -155,12 +170,19 @@ class AbstractRepository(abc.ABC):
                 entity_id = self.fulid.sulid_to_fulid(short_id, entity_ids)
             except KeyError:
                 raise exceptions.EntityNotFoundError(
-                    f"There is no {state} {entity_model} with short_id {short_id}"
+                    f"There is no {state} {self.entity_model_to_str(entity_model)} with"
+                    f" short_id {short_id}"
                 )
         else:
             entity_id = short_id
 
         return entity_id
+
+    def entity_model_to_str(self, entity_model: Type[types.Entity]) -> str:
+        """
+        Method to obtain a nice string from an entity model
+        """
+        return re.sub(r".*\.(.*)'>", r"\1", str(entity_model))
 
 
 class SqlAlchemyRepository(AbstractRepository):
@@ -180,6 +202,7 @@ class SqlAlchemyRepository(AbstractRepository):
 
     Methods:
         create_next_id: Create the next entity's ID.
+        entity_model_to_str: Obtain a nice string from an entity model.
         short_id_to_id: Convert a shortened ID into the complete one.
     """
 
@@ -203,16 +226,22 @@ class SqlAlchemyRepository(AbstractRepository):
         alembic_config.attributes["configure_logger"] = False
         alembic.command.upgrade(alembic_config, "head")
 
-    def get(self, entity_model: types.EntityType, entity_id: str) -> types.Entity:
+    def get(self, entity_model: Type[types.Entity], entity_id: str) -> types.Entity:
         """
         Method to obtain an entity from the repository by it's ID.
         """
 
         if entity_model == Task:
             entity_id = self.short_id_to_id(entity_id, entity_model)
-        return self.session.query(entity_model).get(entity_id)
+        entity = self.session.query(entity_model).get(entity_id)
+        if entity is None:
+            raise exceptions.EntityNotFoundError(
+                f"No {self.entity_model_to_str(entity_model)} found with id {entity_id}"
+            )
 
-    def all(self, entity_model: types.EntityType) -> List[types.Entity]:
+        return entity
+
+    def all(self, entity_model: Type[types.Entity]) -> List[types.Entity]:
         """
         Method to obtain all the entities of a type from the repository.
         """
@@ -226,8 +255,31 @@ class SqlAlchemyRepository(AbstractRepository):
 
         self.session.commit()
 
+    def msearch(
+        self, entity_model: Type[types.Entity], fields: Dict
+    ) -> Union[List[types.Entity], None]:
+        """
+        Method to obtain the entities whose attributes match several conditions.
+
+        fields is a dictionary with the {key}:{value} to search.
+        """
+
+        query = self.session.query(entity_model)
+        try:
+            for key, value in fields.items():
+                query = query.filter(getattr(entity_model, key).like(f"%{value}"))
+        except AttributeError:
+            return None
+
+        result = query.all()
+
+        if len(result) == 0:
+            return None
+        else:
+            return result
+
     def search(
-        self, entity_model: types.EntityType, field: str, value: str
+        self, entity_model: Type[types.Entity], field: str, value: str
     ) -> Union[List[types.Entity], None]:
         """
         Method to obtain the entities whose attribute match a condition.

@@ -78,8 +78,8 @@ a     Buy milk
 Suppose we bought our ingredients and wish to mark the first two tasks as done.
 
 ```
-pydo a done
-pydo s done
+pydo do a
+pydo do a
 pydo
 
 ID    Title
@@ -87,7 +87,7 @@ ID    Title
 d     Bake cake
 ```
 
-Those are the first three features, the `add`, `open` and `done` commands, but
+Those are the first three features, the `add`, `open` and `do` commands, but
 they represent all you really need to know, to get started with `pydo`.
 
 But there are hundreds of other features, so if you learn more, you can do more.

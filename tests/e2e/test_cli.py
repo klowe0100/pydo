@@ -9,7 +9,7 @@ from alembic.config import Config as AlembicConfig
 from click.testing import CliRunner
 
 from pydo.config import Config
-from pydo.entrypoints import _load_repository, _load_session
+from pydo.entrypoints import load_repository, load_session
 from pydo.entrypoints.cli import cli
 from tests import factories
 
@@ -160,8 +160,8 @@ class TestCliAdd:
 
 @pytest.fixture
 def repo_e2e(config_e2e):
-    session = _load_session(config_e2e)
-    yield _load_repository(config_e2e, session)
+    session = load_session(config_e2e)
+    yield load_repository(config_e2e, session)
 
 
 @pytest.fixture
@@ -172,81 +172,130 @@ def insert_task_e2e(repo_e2e):
     yield task
 
 
-class TestCliDo:
-    def test_do_task_by_short_id(self, runner, insert_task_e2e, caplog):
+@pytest.fixture
+def insert_parent_task_e2e(repo_e2e):
+    """
+    Fixture to insert a RecurrentTask and it's children Task in the
+    SQLAlchemyRepository.
+    """
+
+    parent_task = factories.RecurrentTaskFactory.create(state="open")
+    child_task = parent_task.breed_children(factories.create_fulid())
+
+    parent_task.children = [child_task]
+    child_task.parent = parent_task
+
+    repo_e2e.add(parent_task)
+    repo_e2e.add(child_task)
+    repo_e2e.commit()
+
+    return parent_task, child_task
+
+
+@pytest.fixture
+def insert_tasks_e2e(repo_e2e):
+    tasks = factories.TaskFactory.create_batch(3, priority=3, state="open")
+    different_task = factories.TaskFactory.create(priority=2, state="open")
+    tasks.append(different_task)
+
+    for task in tasks:
+        repo_e2e.add(task)
+        repo_e2e.commit()
+
+    yield tasks
+
+
+@pytest.mark.parametrize("action,state", (("do", "completed"), ("rm", "deleted")))
+class TestCliDoAndDel:
+    def test_close_task_by_short_id(
+        self, action, state, runner, insert_task_e2e, caplog
+    ):
         task = insert_task_e2e
 
         task_id = task.id
         task_description = task.description
 
-        result = runner.invoke(cli, ["do", "a"])
+        result = runner.invoke(cli, [action, "a"])
 
         assert result.exit_code == 0
         assert (
             "pydo.services",
             logging.INFO,
-            f"Closed task {task_id}: {task_description} with state completed",
+            f"Closed task {task_id}: {task_description} with state {state}",
         ) in caplog.record_tuples
 
-    def test_do_task_with_complete_date(self, runner, insert_task_e2e, caplog):
+    def test_close_task_with_complete_date(
+        self, action, state, runner, insert_task_e2e, caplog
+    ):
         task = insert_task_e2e
 
         task_id = task.id
         task_description = task.description
 
-        result = runner.invoke(cli, ["do", "-d", "1d", "a"])
+        result = runner.invoke(cli, [action, "-d", "1d", "a"])
 
         assert result.exit_code == 0
         assert (
             "pydo.services",
             logging.INFO,
-            f"Closed task {task_id}: {task_description} with state completed",
+            f"Closed task {task_id}: {task_description} with state {state}",
         ) in caplog.record_tuples
 
-    #     @patch("pydo.manager.TaskManager._get_fulid")
-    #     def test_complete_task_by_fulid_gives_nice_error_if_unexistent(self, mock):
-    #         mock.side_effect = KeyError("No fulid was found with that sulid")
-    #
-    #         self.manager.complete("non_existent_id")
-    #
-    #         self.log.error.assert_called_once_with("There is no task with that id")
-    #
-    #     def test_date_manager_loaded_in_attribute(self):
-    #         assert isinstance(self.manager.date, DateManager)
+    def test_close_accepts_filter_of_tasks(
+        self, action, state, runner, insert_tasks_e2e, caplog
+    ):
+        tasks = insert_tasks_e2e
 
-    @pytest.mark.skip("Not yet")
-    def test_do_does_nothing_if_empty_filter(self, runner, faker, caplog):
-        pass
+        tasks_to_delete = [
+            (task.id, task.description) for task in tasks if task.priority == 3
+        ]
 
-    @pytest.mark.skip("Not yet")
-    def test_do_subcommand_completes_several_tasks(self, runner, faker, caplog):
-        pass
+        result = runner.invoke(cli, [action, "pri:3"])
 
+        assert result.exit_code == 0
+        for task_id, task_description in tasks_to_delete:
+            assert (
+                "pydo.services",
+                logging.INFO,
+                f"Closed task {task_id}: {task_description} with state {state}",
+            ) in caplog.record_tuples
 
-#     def test_done_subcommand_completes_task(self):
-#         arguments = ["done", ulid.new().str]
-#         self.parser_args.subcommand = arguments[0]
-#         self.parser_args.ulid = arguments[1]
-#         self.parser_args.parent = False
-#
-#         main()
-#
-#         self.tm.return_value.complete.assert_called_once_with(
-#             id=arguments[1], parent=False,
-#         )
-#
-#     def test_done_parent_subcommand_completes_parent_task(self):
-#         arguments = ["done", "-p", ulid.new().str]
-#         self.parser_args.subcommand = arguments[0]
-#         self.parser_args.ulid = arguments[1]
-#         self.parser_args.parent = True
-#
-#         main()
-#
-#         self.tm.return_value.complete.assert_called_once_with(
-#             id=arguments[1], parent=True,
-#         )
-#
+    def test_close_task_with_delete_parent(
+        self, action, state, runner, insert_parent_task_e2e, caplog
+    ):
+        parent, child = insert_parent_task_e2e
+
+        parent_id = parent.id
+        parent_description = parent.description
+        child_id = child.id
+        child_description = child.description
+
+        result = runner.invoke(cli, [action, "-p", child_id])
+
+        assert result.exit_code == 0
+        for task_id, task_type, task_description in [
+            (parent_id, "parent", parent_description),
+            (child_id, "child", child_description),
+        ]:
+            assert (
+                "pydo.services",
+                logging.INFO,
+                f"Closed {task_type} task {task_id}: {task_description} with state"
+                f" {state}",
+            ) in caplog.record_tuples
+
+    def test_close_task_fails_gracefully_if_none_found(
+        self, action, state, runner, insert_task_e2e, caplog
+    ):
+        result = runner.invoke(cli, [action, "unexistent_task"])
+
+        assert result.exit_code == 1
+        assert (
+            "pydo.entrypoints.cli",
+            logging.ERROR,
+            f"No Task found with id unexistent_task",
+        ) in caplog.record_tuples
+
 
 # @pytest.mark.skip("Not yet")
 # class TestMain:

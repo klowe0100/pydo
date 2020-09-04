@@ -7,20 +7,12 @@ Functions:
         and config objects.
     load_session: Load the session from the database defined in the config file.
     load_logger: Configure the Logging logger.
-    parse_task_arguments: Parse the Task attributes from a friendly task
-        attributes string.
-
-Internal Functions:
-    _parse_task_argument: Parse the Task attributes from a friendly task
-        attribute string.
 """
 
 import logging
 import os
-import re
 import sys
-from datetime import datetime
-from typing import Any, Dict, Tuple, Union
+from typing import Any
 
 from ruamel.yaml.parser import ParserError
 from sqlalchemy import create_engine
@@ -28,12 +20,11 @@ from sqlalchemy.orm import clear_mappers, sessionmaker
 
 from pydo.adapters import orm, repository
 from pydo.config import Config
-from pydo.model.date import convert_date
 
 log = logging.getLogger(__name__)
 
 
-def _load_config(config_path: str) -> Config:
+def load_config(config_path: str) -> Config:
     """
     Function to load the configuration from the file.
     """
@@ -53,7 +44,7 @@ def _load_config(config_path: str) -> Config:
     return config
 
 
-def _load_session(config: Config) -> Any:
+def load_session(config: Config) -> Any:
     """
     Function to load the session from the database defined in the config file.
 
@@ -70,7 +61,7 @@ def _load_session(config: Config) -> Any:
     return sessionmaker(bind=engine)()
 
 
-def _load_repository(config: Config, session: Any) -> repository.AbstractRepository:
+def load_repository(config: Config, session: Any) -> repository.AbstractRepository:
     """
     Function to configure the SqlAlchemyRepository with the session and config objects.
     """
@@ -80,7 +71,7 @@ def _load_repository(config: Config, session: Any) -> repository.AbstractReposit
     return repo
 
 
-def _load_logger(verbose: bool = False) -> None:
+def load_logger(verbose: bool = False) -> None:
     """
     Function to configure the Logging logger.
     """
@@ -99,79 +90,3 @@ def _load_logger(verbose: bool = False) -> None:
             stream=sys.stderr, level=logging.INFO, format="  %(levelname)s %(message)s"
         )
         logging.getLogger("alembic").setLevel(logging.WARNING)
-
-
-def _parse_task_argument(task_arg: str) -> Tuple[str, Union[str, int, float, datetime]]:
-    """
-    Function to parse the Task attributes from a friendly task attribute string.
-
-    Returns:
-        attribute_id (str): Attribute key.
-        attributes_value (str|int|float|date): Attribute value.
-    """
-
-    attribute_conf = {
-        "agile": {"regexp": r"^(ag|agile):", "type": "str"},
-        "body": {"regexp": r"^body:", "type": "str"},
-        "due": {"regexp": r"^due:", "type": "date"},
-        "estimate": {"regexp": r"^(est|estimate):", "type": "float"},
-        "fun": {"regexp": r"^fun:", "type": "int"},
-        "priority": {"regexp": r"^(pri|priority):", "type": "int"},
-        "project_id": {"regexp": r"^(pro|project):", "type": "str"},
-        "recurring": {"regexp": r"^(rec|recurring):", "type": "str"},
-        "repeating": {"regexp": r"^(rep|repeating):", "type": "str"},
-        "tag_ids": {"regexp": r"^\+", "type": "tag"},
-        "tags_rm": {"regexp": r"^\-", "type": "tag"},
-        "value": {"regexp": r"^(vl|value):", "type": "int"},
-        "willpower": {"regexp": r"^(wp|willpower):", "type": "int"},
-    }
-
-    for attribute_id, attribute in attribute_conf.items():
-        if re.match(attribute["regexp"], task_arg):
-            if attribute["type"] == "tag":
-                if len(task_arg) < 2:
-                    raise ValueError("Empty tag value")
-                return attribute_id, re.sub(r"^[+-]", "", task_arg)
-            elif task_arg.split(":")[1] == "":
-                return attribute_id, ""
-            elif attribute["type"] == "str":
-                return attribute_id, task_arg.split(":")[1]
-            elif attribute["type"] == "int":
-                return attribute_id, int(task_arg.split(":")[1])
-            elif attribute["type"] == "float":
-                return attribute_id, float(task_arg.split(":")[1])
-            elif attribute["type"] == "date":
-                return (
-                    attribute_id,
-                    convert_date(":".join(task_arg.split(":")[1:])),
-                )
-    return "description", task_arg
-
-
-def parse_task_arguments(task_args: str) -> Dict:
-    """
-    Function to parse the Task attributes from a friendly task attributes string.
-    """
-
-    task_attributes: Dict = {}
-
-    for task_arg in task_args:
-        attribute_id, attribute_value = _parse_task_argument(task_arg)
-        if attribute_id in ["tag_ids", "tags_rm", "description"]:
-            try:
-                task_attributes[attribute_id]
-            except KeyError:
-                task_attributes[attribute_id] = []
-            task_attributes[attribute_id].append(attribute_value)
-        elif attribute_id in ["recurring", "repeating"]:
-            task_attributes["recurrence"] = attribute_value
-            task_attributes["recurrence_type"] = attribute_id
-        else:
-            task_attributes[attribute_id] = attribute_value
-
-    try:
-        task_attributes["description"] = " ".join(task_attributes["description"])
-    except KeyError:
-        pass
-
-    return task_attributes

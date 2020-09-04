@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from pydo import exceptions
 from pydo.adapters import repository
 from pydo.model.project import Project
 from pydo.model.tag import Tag
@@ -78,6 +79,12 @@ class TestSQLAlchemyRepositoryWithOneObject:
         # Task.__eq__ only compares reference
         assert retrieved_obj.description == expected_obj.description
 
+    def test_repository_raises_error_if_no_repository_matches_get(
+        self, factory, table, session, obj_model, insert_object_sql, repo_sql
+    ):
+        with pytest.raises(exceptions.EntityNotFoundError):
+            repo_sql.get(obj_model, "unexistent_id")
+
 
 @pytest.mark.parametrize(
     "factory,table,obj_model,insert_objects_sql",
@@ -121,6 +128,38 @@ class TestSQLAlchemyRepositoryWithSeveralObjects:
 
         assert retrieved_obj is None
 
+    def test_repository_can_search_by_multiple_properties(
+        self, factory, table, session, obj_model, insert_objects_sql, repo_sql
+    ):
+        expected_obj = insert_objects_sql[1]
+
+        task_filter = {
+            "state": expected_obj.state,
+            "description": expected_obj.description,
+        }
+
+        retrieved_obj = repo_sql.msearch(obj_model, task_filter)
+
+        assert retrieved_obj == [expected_obj]
+
+    def test_repository_msearch_returns_none_if_unexistent_key(
+        self, factory, table, session, obj_model, insert_objects_sql, repo_sql
+    ):
+        filter = {"unexistent": "value"}
+
+        retrieved_obj = repo_sql.msearch(obj_model, filter)
+
+        assert retrieved_obj is None
+
+    def test_repository_msearch_returns_none_if_unexistent_value(
+        self, factory, table, session, obj_model, insert_objects_sql, repo_sql
+    ):
+        filter = {"description": "unexistent value"}
+
+        retrieved_obj = repo_sql.msearch(obj_model, filter)
+
+        assert retrieved_obj is None
+
 
 @pytest.mark.parametrize("factory,table", add_fixtures)
 class TestFakeRepositoryEmpty:
@@ -152,12 +191,11 @@ class TestFakeRepositoryWithOneObject:
         # Task.__eq__ only compares reference
         assert retrieved_obj.description == expected_obj.description
 
-    def test_repository_returns_None_if_no_repository_matches_get(
+    def test_repository_raises_error_if_no_repository_matches_get(
         self, factory, table, obj_model, insert_object, repo
     ):
-        retrieved_obj = repo.get(obj_model, "unexistent_id")
-
-        assert retrieved_obj is None
+        with pytest.raises(exceptions.EntityNotFoundError):
+            repo.get(obj_model, "unexistent_id")
 
 
 @pytest.mark.parametrize(
@@ -177,7 +215,7 @@ class TestFakeRepositoryWithSeveralObject:
         assert len(retrieved_obj) == 3
         assert retrieved_obj[0].description == expected_obj[0].description
 
-    def test_repository_can_filter_by_property(
+    def test_repository_can_search_by_property(
         self, factory, table, session, obj_model, insert_objects, repo
     ):
         expected_obj = [insert_objects[1]]
@@ -197,5 +235,39 @@ class TestFakeRepositoryWithSeveralObject:
         self, factory, table, session, obj_model, insert_objects, repo
     ):
         retrieved_obj = repo.search(obj_model, "id", "unexistent_value")
+
+        assert retrieved_obj is None
+
+    def test_repository_can_search_by_multiple_properties(
+        self, factory, table, session, obj_model, insert_objects, repo
+    ):
+        expected_obj = insert_objects[1]
+
+        filter = {"state": expected_obj.state, "description": expected_obj.description}
+
+        retrieved_obj = repo.msearch(obj_model, filter)
+
+        assert retrieved_obj == [expected_obj]
+
+    def test_repository_msearch_returns_none_if_unexistent_key(
+        self, factory, table, session, obj_model, insert_objects, repo
+    ):
+        filter = {"unexistent": "value"}
+
+        retrieved_obj = repo.msearch(obj_model, filter)
+
+        try:
+            assert retrieved_obj is None
+        except Exception:
+            # Trying to catch a bug that happens sometimes
+            __import__("pdb").set_trace()  # XXX BREAKPOINT
+            retrieved_obj = repo.msearch(obj_model, filter)
+
+    def test_repository_msearch_returns_none_if_unexistent_value(
+        self, factory, table, session, obj_model, insert_objects, repo
+    ):
+        filter = {"description": "unexistent value"}
+
+        retrieved_obj = repo.msearch(obj_model, filter)
 
         assert retrieved_obj is None

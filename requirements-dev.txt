@@ -10,6 +10,7 @@ attrs==19.3.0             # via pytest
 cfgv==3.1.0               # via pre-commit
 click==7.1.2              # via -r requirements.txt, pip-tools
 coverage==5.1             # via pytest-cov
+deepdiff[murmur]==5.0.2   # via -r requirements-dev.in
 distlib==0.3.1            # via virtualenv
 factory-boy==2.12.0       # via -r requirements-dev.in
 faker==4.1.1              # via factory-boy
@@ -19,10 +20,12 @@ identify==1.4.21          # via pre-commit
 importlib-metadata==1.7.0  # via pluggy, pre-commit, pytest, virtualenv
 mako==1.1.0               # via -r requirements.txt, alembic
 markupsafe==1.1.1         # via -r requirements.txt, mako
+mmh3==2.5.1               # via deepdiff
 more-itertools==8.4.0     # via pytest
 mypy-extensions==0.4.3    # via mypy
 mypy==0.782               # via -r requirements-dev.in
 nodeenv==1.4.0            # via pre-commit
+ordered-set==4.0.2        # via deepdiff
 packaging==20.4           # via pytest
 pip-tools==5.2.1          # via -r requirements-dev.in
 pluggy==0.13.1            # via pytest

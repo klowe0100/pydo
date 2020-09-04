@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from pydo.entrypoints import _parse_task_arguments
+from pydo.services import parse_task_arguments
+from tests import factories
 
 
 class TestTaskArgumentParser:
@@ -8,12 +9,12 @@ class TestTaskArgumentParser:
         description = faker.sentence()
         task_arguments = description.split(" ")
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
 
     def test_parse_allows_empty_description(self):
-        attributes = _parse_task_arguments("")
+        attributes = parse_task_arguments("")
 
         assert "description" not in attributes
 
@@ -25,7 +26,7 @@ class TestTaskArgumentParser:
             f"pro:{project}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["project_id"] == project
@@ -38,7 +39,7 @@ class TestTaskArgumentParser:
             f"project:{project}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["project_id"] == project
@@ -53,7 +54,7 @@ class TestTaskArgumentParser:
             f"+{tags[1]}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["tag_ids"] == tags
@@ -68,7 +69,7 @@ class TestTaskArgumentParser:
             f"-{tags[1]}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["tags_rm"] == tags
@@ -81,7 +82,7 @@ class TestTaskArgumentParser:
             f"pri:{priority}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["priority"] == priority
@@ -94,7 +95,7 @@ class TestTaskArgumentParser:
             f"priority:{priority}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["priority"] == priority
@@ -107,7 +108,7 @@ class TestTaskArgumentParser:
             f"est:{estimate}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["estimate"] == estimate
@@ -120,7 +121,7 @@ class TestTaskArgumentParser:
             f"estimate:{estimate}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["estimate"] == estimate
@@ -133,7 +134,7 @@ class TestTaskArgumentParser:
             f"wp:{willpower}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["willpower"] == willpower
@@ -146,7 +147,7 @@ class TestTaskArgumentParser:
             f"willpower:{willpower}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["willpower"] == willpower
@@ -159,7 +160,7 @@ class TestTaskArgumentParser:
             f"vl:{value}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["value"] == value
@@ -172,7 +173,7 @@ class TestTaskArgumentParser:
             f"value:{value}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["value"] == value
@@ -185,7 +186,7 @@ class TestTaskArgumentParser:
             f"fun:{fun}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["fun"] == fun
@@ -198,7 +199,7 @@ class TestTaskArgumentParser:
             f"body:{body}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["body"] == body
@@ -211,7 +212,7 @@ class TestTaskArgumentParser:
             f"ag:{agile}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["agile"] == agile
@@ -224,7 +225,7 @@ class TestTaskArgumentParser:
             f"agile:{agile}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["agile"] == agile
@@ -237,7 +238,7 @@ class TestTaskArgumentParser:
             f"due:{due}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert isinstance(attributes["due"], datetime)
         assert attributes["due"].day == datetime.now().day + 1
@@ -253,7 +254,7 @@ class TestTaskArgumentParser:
             "fun:",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == ""
         assert attributes["agile"] == ""
@@ -269,7 +270,7 @@ class TestTaskArgumentParser:
             f"recurring:{recurring}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["recurrence_type"] == "recurring"
@@ -283,7 +284,7 @@ class TestTaskArgumentParser:
             f"rec:{recurring}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["recurrence_type"] == "recurring"
@@ -297,7 +298,7 @@ class TestTaskArgumentParser:
             f"repeating:{repeating}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["recurrence_type"] == "repeating"
@@ -311,8 +312,34 @@ class TestTaskArgumentParser:
             f"rep:{repeating}",
         ]
 
-        attributes = _parse_task_arguments(task_arguments)
+        attributes = parse_task_arguments(task_arguments)
 
         assert attributes["description"] == description
         assert attributes["recurrence_type"] == "repeating"
         assert attributes["recurrence"] == repeating
+
+    def test_parse_extracts_task_ids(self, faker):
+        task_arguments = ["a", "s", "d"]
+
+        attributes = parse_task_arguments(task_arguments, "filter")
+
+        assert attributes["task_ids"] == task_arguments
+
+    def test_parse_doesnt_process_task_ids(self, faker):
+        task_arguments = [factories.create_fulid()]
+
+        attributes = parse_task_arguments(task_arguments, "filter")
+
+        assert attributes["task_ids"] == task_arguments
+
+    def test_parse_extracts_state(self, faker):
+        description = faker.sentence()
+        state = "open"
+        task_arguments = [
+            description,
+            f"state:{state}",
+        ]
+
+        attributes = parse_task_arguments(task_arguments)
+
+        assert attributes["state"] == "open"

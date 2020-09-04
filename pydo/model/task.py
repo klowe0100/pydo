@@ -86,11 +86,11 @@ class Task(Entity):
         super().__init__(id, description, state, created, closed)
         self.agile = agile
         self.body = body
-        self.children: Optional[List] = []
+        self.children: Optional[List["Task"]] = []
         self.due = due
         self.estimate = estimate
         self.fun = fun
-        self.parent = None
+        self.parent: Optional["Task"] = None
         self.parent_id = parent_id
         self.priority = priority
         self.project_id = project_id
@@ -424,19 +424,3 @@ class RecurrentTask(Task):
         self.children.append(child_task)
 
         return child_task
-
-    def close(self, state: str, close_date: Optional[datetime] = None) -> None:
-        """
-        Method to override the Entity method to close a task, so that the parent
-        children are closed with her.
-        """
-
-        super().close(state, close_date)
-
-        if self.children is not None:
-            for child in self.children:
-                child.close(state, close_date)
-                log.info(
-                    f"Closing child task {child.id}: {child.description} with state"
-                    f" {state}"
-                )

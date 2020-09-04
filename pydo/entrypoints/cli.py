@@ -10,18 +10,12 @@ Functions:
 
 import logging
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import click
 
 from pydo import exceptions, services
-from pydo.entrypoints import (
-    load_config,
-    load_logger,
-    load_repository,
-    load_session,
-    parse_task_arguments,
-)
+from pydo.entrypoints import load_config, load_logger, load_repository, load_session
 
 load_logger()
 log = logging.getLogger(__name__)
@@ -35,7 +29,7 @@ log = logging.getLogger(__name__)
     help="configuration file path",
     envvar="PYDO_CONFIG_PATH",
 )
-@click.option("-v", "--verbose", default=False)
+@click.option("-v", "--verbose", is_flag=True)
 @click.pass_context
 def cli(ctx: Any, config_path: str, verbose: bool) -> None:
     """
@@ -56,13 +50,13 @@ def cli(ctx: Any, config_path: str, verbose: bool) -> None:
 @cli.command(context_settings=dict(ignore_unknown_options=True,))
 @click.argument("task_args", nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
-def add(ctx, task_args) -> None:
+def add(ctx: Any, task_args: Tuple) -> None:
     """
     Function to define the interface to add tasks.
     """
 
     try:
-        task_attributes: Dict = parse_task_arguments(task_args)
+        task_attributes: Dict = services.parse_task_arguments(list(task_args))
     except exceptions.DateParseError as e:
         log.error(str(e))
         sys.exit(1)
@@ -76,15 +70,38 @@ def add(ctx, task_args) -> None:
 
 @cli.command(context_settings=dict(ignore_unknown_options=True,))
 @click.option("-d", "--close_date", default="now")
-@click.option("-p", "--close_parent", default=None)
-@click.argument("task_filter", nargs=1, required=True, type=click.UNPROCESSED)
+@click.option("-p", "--close_parent", is_flag=True)
+@click.argument("task_filter", nargs=-1, required=True, type=click.UNPROCESSED)
 @click.pass_context
-def do(ctx, task_filter, close_date, close_parent) -> None:
+def do(ctx: Any, task_filter: Tuple, close_date: str, close_parent: bool) -> None:
     """
     Function to define the interface to complete tasks.
     """
+    try:
+        services.do_tasks(
+            ctx.obj["repo"], " ".join(task_filter), close_date, close_parent
+        )
+    except exceptions.EntityNotFoundError as e:
+        log.error(str(e))
+        sys.exit(1)
 
-    services.do_task(ctx.obj["repo"], task_filter, close_date, close_parent)
+
+@cli.command(context_settings=dict(ignore_unknown_options=True,))
+@click.option("-d", "--close_date", default="now")
+@click.option("-p", "--close_parent", is_flag=True)
+@click.argument("task_filter", nargs=-1, required=True, type=click.UNPROCESSED)
+@click.pass_context
+def rm(ctx: Any, task_filter: Tuple, close_date: str, close_parent: bool) -> None:
+    """
+    Function to define the interface to delete tasks.
+    """
+    try:
+        services.rm_tasks(
+            ctx.obj["repo"], " ".join(task_filter), close_date, close_parent
+        )
+    except exceptions.EntityNotFoundError as e:
+        log.error(str(e))
+        sys.exit(1)
 
 
 @cli.command()

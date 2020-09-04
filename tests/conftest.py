@@ -49,13 +49,14 @@ import os
 import random
 import re
 from shutil import copyfile
-from typing import Any, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
 
 import pytest
+from deepdiff import extract, grep
 from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
-from pydo import types
+from pydo import exceptions, types
 from pydo.adapters import repository
 from pydo.adapters.orm import metadata, start_mappers
 from pydo.config import Config
@@ -142,6 +143,7 @@ class FakeRepository(repository.AbstractRepository):
 
     Methods:
         create_next_id: Create the next entity's ID.
+        entity_model_to_str: Obtain a nice string from an entity model.
         short_id_to_id: Convert a shortened ID into the complete one.
 
     Internal Methods:
@@ -177,7 +179,7 @@ class FakeRepository(repository.AbstractRepository):
 
         pass
 
-    def _get_object(self, id: str, entities: types.Entities):
+    def _get_object(self, id: str, entities: List[types.Entity]):
         """
         Method to return an entity given it's ID and type.
         """
@@ -187,17 +189,19 @@ class FakeRepository(repository.AbstractRepository):
         except StopIteration:
             return None
 
-    def _select_table(self, entity_model: types.EntityType) -> types.Entities:
+    def _select_table(self, entity_model: Type[types.Entity]) -> List[types.Entity]:
         """
         Method to return the list of objects matching an object model type.
         """
+        # I need a better way to extract the type. The problem is that as the
+        # objects are not instiated type(entity_model) == abc.ABC.
 
         if re.match(r"<class 'pydo.model.project.*", str(entity_model)):
-            return list(self._project)
+            return list(self._project)  # type: ignore
         elif re.match(r"<class 'pydo.model.tag.*", str(entity_model)):
-            return list(self._tag)
+            return list(self._tag)  # type: ignore
         elif re.match(r"<class 'pydo.model.task.*", str(entity_model)):
-            return list(self._task)
+            return list(self._task)  # type: ignore
         else:
             raise NotImplementedError
 
@@ -218,12 +222,12 @@ class FakeRepository(repository.AbstractRepository):
 
         parent = self.get(Task, child_task.parent_id)
 
-        if parent is not None:
-            if not isinstance(parent, Task):
-                raise TypeError("trying to load wrong object as a parent task")
+        if isinstance(parent, Task):
             child_task.parent = parent
+        else:
+            raise TypeError("trying to load wrong object as a parent task")
 
-    def get(self, entity_model: types.EntityType, entity_id: str) -> types.Entity:
+    def get(self, entity_model: Type[types.Entity], entity_id: str) -> types.Entity:
         """
         Method to obtain an entity from the repository by it's ID.
         """
@@ -233,15 +237,22 @@ class FakeRepository(repository.AbstractRepository):
 
         entity = self._get_object(entity_id, self._select_table(entity_model))
 
-        if entity_model == Task and entity is not None:
+        if entity is None:
+            raise exceptions.EntityNotFoundError(
+                f"No {self.entity_model_to_str(entity_model)} found with id {entity_id}"
+            )
+
+        try:
             if entity.type == "recurrent_task":
                 self._populate_children(entity)
             elif entity.parent_id is not None:
                 self._populate_parent(entity)
+        except AttributeError:
+            pass
 
         return entity
 
-    def all(self, entity_model: types.EntityType) -> List[types.Entity]:
+    def all(self, entity_model: Type[types.Entity]) -> List[types.Entity]:
         """
         Method to obtain all the entities of a type from the repository.
         """
@@ -258,8 +269,47 @@ class FakeRepository(repository.AbstractRepository):
         # them to the real set when using this method.
         pass
 
+    def msearch(
+        self, entity_model: Type[types.Entity], fields: Dict
+    ) -> Union[List[types.Entity], None]:
+        """
+        Method to obtain the entities whose attributes match several conditions.
+
+        fields is a dictionary with the `key`:`value` to search.
+
+        It assumes that the attributes of the entities are str.
+        """
+
+        all_entities = self.all(entity_model)
+        entities_dict = {entity.id: entity for entity in all_entities}
+        entity_attributes = {
+            entity.id: entity._get_attributes() for entity in all_entities
+        }
+
+        for key, value in fields.items():
+            # Get entities that have the value `value`
+            entities_with_value = entity_attributes | grep(value)
+            matching_entity_attributes = {}
+
+            try:
+                entities_with_value["matched_values"]
+            except KeyError:
+                return None
+
+            for path in entities_with_value["matched_values"]:
+                entity_id = re.sub(r"root\['(.*)'\]\[.*", r"\1", path)
+                # Add the entity to the matching ones only if the value is of the
+                # attribute `key`.
+                if re.match(re.compile(fr"root\['{entity_id}'\]\['{key}'\]"), path):
+                    matching_entity_attributes[entity_id] = extract(
+                        entity_attributes, f"root[{entity_id}]"
+                    )
+
+            entity_attributes = matching_entity_attributes
+        return [entities_dict[key] for key in entity_attributes.keys()]
+
     def search(
-        self, entity_model: types.EntityType, field: str, value: str
+        self, entity_model: Type[types.Entity], field: str, value: str
     ) -> Optional[List[types.Entity]]:
         """
         Method to obtain the entities whose attribute match a condition.

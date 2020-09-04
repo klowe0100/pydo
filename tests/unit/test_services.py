@@ -8,6 +8,7 @@ from pydo.fulids import fulid
 from pydo.model.project import Project
 from pydo.model.tag import Tag
 from pydo.model.task import Task
+from tests import factories
 
 
 class TestTaskAdd:
@@ -75,7 +76,6 @@ class TestTaskAdd:
         }
 
         task = services.add_task(repo, task_attributes)
-        __import__("pdb").set_trace()  # XXX BREAKPOINT
 
         assert task.tag_ids == [existent_tag.id]
 
@@ -113,7 +113,11 @@ class TestTaskAdd:
         parent_task = repo.get(Task, parent_task.id)
         child_task = repo.get(Task, child_task.id)
 
-        assert child_task.id != parent_task.id
+        # Assert the id of the child is sequential with the parent's
+        assert (
+            fulid()._decode_id(child_task.id) == fulid()._decode_id(parent_task.id) + 1
+        )
+
         assert child_task.parent_id == parent_task.id
         assert child_task.parent is parent_task
         assert child_task.state == "open"
@@ -136,93 +140,116 @@ class TestTaskAdd:
         ) in caplog.record_tuples
 
 
-class TestTaskDo:
-    def test_do_task_by_id(self, repo, insert_task, freezer, caplog):
+@pytest.mark.parametrize(
+    "action,state", ((services.do_tasks, "completed"), (services.rm_tasks, "deleted"))
+)
+class TestTaskDoAndDel:
+    def test_close_task_by_id(self, action, state, repo, insert_task, freezer, caplog):
         now = datetime.now()
         task = insert_task
 
-        services.do_task(repo, task.id)
+        action(repo, task.id)
 
         assert task.closed == now
-        assert task.description == task.description
-        assert task.state == "completed"
+        assert task.state == state
         assert (
             "pydo.services",
             logging.INFO,
-            f"Closed task {task.id}: {task.description} with state completed",
+            f"Closed task {task.id}: {task.description} with state {state}",
         ) in caplog.record_tuples
 
-    def test_do_task_by_short_id(self, repo, insert_task, freezer, caplog):
+    def test_close_task_by_short_id(
+        self, action, state, repo, insert_task, freezer, caplog
+    ):
         now = datetime.now()
         task = insert_task
 
-        # services.do_task(fulid().fulid_to_sulid(task.id, [task.id]),)
         # Its the first and only task so the sulid is 'a'
-        services.do_task(repo, "a")
+        action(repo, "a")
 
         assert task.closed == now
         assert task.description == task.description
-        assert task.state == "completed"
+        assert task.state == state
         assert (
             "pydo.services",
             logging.INFO,
-            f"Closed task {task.id}: {task.description} with state completed",
+            f"Closed task {task.id}: {task.description} with state {state}",
         ) in caplog.record_tuples
 
-    def test_do_task_with_complete_date(self, repo, insert_task, caplog):
+    def test_close_accepts_list_of_tasks(
+        self, action, state, repo, insert_tasks, freezer, caplog
+    ):
+        now = datetime.now()
+        tasks = insert_tasks
+
+        # Delete using the three task ids.
+        action(repo, " ".join([task.id for task in tasks]))
+
+        for task in tasks:
+            assert task.closed == now
+            assert task.state == state
+            assert (
+                "pydo.services",
+                logging.INFO,
+                f"Closed task {task.id}: {task.description} with state {state}",
+            ) in caplog.record_tuples
+
+    def test_close_task_with_complete_date(
+        self, action, state, repo, insert_task, caplog
+    ):
         complete_date = "2003-08-06"
         task = insert_task
 
-        services.do_task(repo, task.id, complete_date)
+        action(repo, task.id, complete_date)
 
         assert task.closed == datetime(2003, 8, 6)
-        assert task.state == "completed"
+        assert task.state == state
         assert (
             "pydo.services",
             logging.INFO,
-            f"Closed task {task.id}: {task.description} with state completed",
+            f"Closed task {task.id}: {task.description} with state {state}",
         ) in caplog.record_tuples
 
-    def test_do_parent_task_also_do_child(
-        self, repo, insert_parent_task, freezer, caplog
+    def test_close_parent_task_also_do_child(
+        self, action, state, repo, insert_parent_task, freezer, caplog
     ):
         now = datetime.now()
         parent_task, child_task = insert_parent_task
 
-        services.do_task(repo, parent_task.id)
+        action(repo, parent_task.id)
 
-        assert parent_task.state == "completed"
+        assert parent_task.state == state
         assert parent_task.closed == now
-        assert child_task.state == "completed"
+        assert child_task.state == state
         assert child_task.closed == now
 
         assert (
             "pydo.services",
             logging.INFO,
-            f"Closed task {parent_task.id}: {parent_task.description} with state"
-            " completed",
+            f"Closed parent task {parent_task.id}: {parent_task.description} with state"
+            f" {state}",
         ) in caplog.record_tuples
 
         assert (
-            "pydo.model.task",
+            "pydo.services",
             logging.INFO,
-            f"Closing child task {child_task.id}: {child_task.description} with state"
-            " completed",
+            f"Closed child task {child_task.id}: {child_task.description} with state"
+            f" {state}",
         ) in caplog.record_tuples
 
-    def test_do_child_task_generates_next_children(
-        self, repo, insert_parent_task, freezer, caplog
+    def test_close_child_task_generates_next_children(
+        self, action, state, repo, insert_parent_task, freezer, caplog
     ):
         now = datetime.now()
         parent_task, child_task = insert_parent_task
 
-        services.do_task(repo, child_task.id)
+        action(repo, child_task.id)
 
         new_child = parent_task.children[1]
 
         assert len(parent_task.children) == 2
 
-        assert child_task.state == "completed"
+        assert child_task.state == state
         assert child_task.closed == now
 
         assert new_child.state == "open"
@@ -232,8 +259,8 @@ class TestTaskDo:
         assert (
             "pydo.services",
             logging.INFO,
-            f"Closed task {child_task.id}: {child_task.description} with state"
-            " completed",
+            f"Closed child task {child_task.id}: {child_task.description} with state"
+            f" {state}",
         ) in caplog.record_tuples
         assert (
             "pydo.services",
@@ -241,34 +268,63 @@ class TestTaskDo:
             f"Added child task {new_child.id}: {new_child.description}",
         ) in caplog.record_tuples
 
-    def test_do_child_task_with_delete_parent_true_also_do_parent(
-        self, repo, insert_parent_task, freezer
+    def test_close_child_task_with_delete_parent_true_also_do_parent(
+        self, action, state, repo, insert_parent_task, freezer
     ):
         now = datetime.now()
         parent_task, child_task = insert_parent_task
 
-        services.do_task(repo, child_task.id, delete_parent=True)
+        action(repo, child_task.id, delete_parent=True)
 
-        assert parent_task.state == "completed"
+        assert parent_task.state == state
         assert parent_task.closed == now
-        assert child_task.state == "completed"
+        assert child_task.state == state
         assert child_task.closed == now
 
-    def test_do_orphan_child_task_with_delete_parent_true_raises_error(
-        self, repo, insert_task, freezer
+    def test_close_orphan_child_task_with_delete_parent_logs_the_error(
+        self, action, state, repo, insert_task, freezer, caplog
     ):
         now = datetime.now()
         task = insert_task
 
-        with pytest.raises(ValueError):
-            services.do_task(repo, task.id, delete_parent=True)
+        action(repo, task.id, delete_parent=True)
 
-        assert task.state == "completed"
+        assert task.state == state
         assert task.closed == now
+        assert (
+            "pydo.services",
+            logging.INFO,
+            f"Task {task.id} doesn't have a parent",
+        ) in caplog.record_tuples
 
-    @pytest.mark.skip("Not yet")
-    def test_do_accepts_list_of_tasks(self):
-        pass
+
+class TestTaskFilter:
+    def test_task_filter_accepts_a_task_short_id(self, repo, insert_task):
+        task = insert_task
+
+        extracted_tasks = services.tasks_from_task_filter(repo, task.id[-1])
+
+        assert extracted_tasks == [task]
+
+    def test_task_filter_accepts_a_list_of_task_ids(self, repo, insert_tasks):
+        tasks = insert_tasks
+        task_ids = [task.id for task in tasks]
+
+        extracted_tasks = services.tasks_from_task_filter(repo, " ".join(task_ids))
+
+        assert extracted_tasks == sorted(tasks)
+
+    def test_task_filter_accepts_a_filter_of_task_ids(self, repo):
+        tasks = factories.TaskFactory.create_batch(3, priority=3)
+        tasks_to_extract = factories.TaskFactory.create_batch(2, priority=5)
+        tasks_to_add = tasks.copy()
+        tasks_to_add.extend(tasks_to_extract)
+        [repo.add(task) for task in tasks_to_add]
+        repo.commit()
+
+        extracted_tasks = services.tasks_from_task_filter(repo, "pri:5")
+
+        assert extracted_tasks == sorted(tasks_to_extract)
 
 
 #     @patch("pydo.manager.TaskManager._spawn_next_recurring")
